@@ -17,7 +17,12 @@ Your system needs to have the following to build and run our code
 
 install with `sudo apt install make cmake gcc`
 ## Building
-To build our code do the following: ...
+To build our code do the following: 
+
+### Windows
+All you need to do to build is open the developer command prompt and navigate to the top directory for this project. Then just enter the command `build.bat`.
+### Linux
+In the terminal, navigate to the top directory for this project and build with `./build.sh`.
 
 ##
 Maps generated using code from this repo https://github.com/dcaffo98/path-planning-cnn
