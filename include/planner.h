@@ -3,15 +3,16 @@
 
 #include <unordered_map>
 #include <queue>
-#include <math.h>
+#include <limits>
+
 
 struct Node
 {
     int x;
     int y;
-    double g=INT32_MAX;
-    double h=INT32_MAX;
-    double v=INT32_MAX;
+    double g=std::numeric_limits<double>::max();
+    double h=std::numeric_limits<double>::max();;
+    double v=std::numeric_limits<double>::max();;
 };
 
 #endif
