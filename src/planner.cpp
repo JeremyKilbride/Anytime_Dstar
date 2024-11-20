@@ -8,6 +8,8 @@ void plannerAstar()
 {
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using A* planner\n";
+    //we need start index, goal index, and the area around the robot that we can see. 
+    //lets update the map each step instead of just creating a new one- this will probably help in later steps. 
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
