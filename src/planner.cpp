@@ -1,6 +1,8 @@
 #include "planner.h"
 #include<iostream>
 #include <chrono>
+#include <string>
+#include <cctype>
 
 using std::cout;
 
@@ -46,8 +48,14 @@ int main(int argc, char** argv)
     }
     std::string map_path=argv[1];
     cout<<"got map file "<<map_path<<"\n";
-    int which=std::stoi(argv[2]);
-
+    int which=-1;
+    if (std::isdigit(argv[2][0])){
+	which=std::stoi(argv[2]);
+    }
+    else{
+	cout<<"please use an integer to select which planner\n";
+	return 0;
+    }
     switch (which)
     {
     case planner::ASTAR:
