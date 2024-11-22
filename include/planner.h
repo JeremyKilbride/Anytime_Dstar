@@ -11,7 +11,7 @@
 #include <fstream>
 #include <sstream>
 #ifndef MAPS_DIR
-#define MAPS_DIR = "maps"
+#define MAPS_DIR "maps"
 #endif
 
 
@@ -54,7 +54,7 @@ class Graph
             }
         }
 
-}
+};
 void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
     std::string mapDirPath = MAPS_DIR;
     std::string mapFilePath = mapDirPath + "/" + map_name;
