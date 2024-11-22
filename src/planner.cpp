@@ -15,22 +15,15 @@ bool operator> (Node& lhs, Node& rhs)
 }
 
 
-void plannerAstar(std::string map_name)
+void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
 {
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using A* planner\n";
-    int* map;
-    int x_size;
-    int y_size;
-    Node start_node;
-    Node goal_node;
-    read_map(map_name,map,x_size,y_size,start_node,goal_node);
     std::cout << "\n"<< "x_size: " << x_size << "\n";
     std::cout << "\n"<< "y_size: " << y_size << "\n";
-    std::cout << "\n"<< "robot pose: " << start_node.x <<","<<start_node.y << "\n";
-    std::cout << "\n"<< "goal pose: " << goal_node.x <<","<<goal_node.y << "\n";
-    std::cout << "\n"<< "first map entry " << map[0] << "\n";
- 
+    std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
+    std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
+    
 
 
 
@@ -40,11 +33,15 @@ void plannerAstar(std::string map_name)
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
 }
 
-std::vector<std::pair<int,int>> plannerDstarLite()
+std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal)
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using D* Lite planner\n";
+    std::cout << "\n"<< "x_size: " << x_size << "\n";
+    std::cout << "\n"<< "y_size: " << y_size << "\n";
+    std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
+    std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
     std::unordered_map<int, Node> closed_list;
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
 
@@ -86,13 +83,25 @@ int main(int argc, char** argv)
 	cout<<"please use an integer to select which planner\n";
 	return 0;
     }
+
+    //make variables necessary to setup problem
+    int* map;
+    int x_size;
+    int y_size;
+    Node start_node;
+    Node goal_node;
+    bool success=read_map(map_path,map,x_size,y_size,start_node,goal_node);
+    if (!success){
+        cout<< "did not read map successfully, exiting planner\n";
+        return 0;
+    }
     switch (which)
     {
     case planner::ASTAR:
-        plannerAstar(map_path);
+        plannerAstar(map,x_size,y_size,start_node,goal_node);
         break;
     case planner::DSTAR_LITE:
-        plannerDstarLite();
+        plannerDstarLite(map,x_size,y_size,start_node,goal_node);
         break;
     case planner::ANYTIME_DSTAR:
         plannerAnytimeDstar();

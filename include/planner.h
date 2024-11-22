@@ -55,7 +55,7 @@ class Graph
         }
 
 };
-void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
+bool read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
     std::string mapDirPath = MAPS_DIR;
     std::string mapFilePath = mapDirPath + "/" + map_name;
 
@@ -63,7 +63,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     myfile.open(mapFilePath);
     if (!myfile.is_open()) {
         std::cout << "Failed to open the file:" << mapFilePath << std::endl;
-        return;
+        return false;
     }
 
     // read map size
@@ -75,7 +75,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'N')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
     myfile >> x_size >> letter >> y_size;
     std:: cout << "map size: " << x_size << letter << y_size << std::endl;
@@ -86,7 +86,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'R')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
 
     myfile >> robotposeX >> letter >> robotposeY;
@@ -98,7 +98,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'G')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
     int goalposeX, goalposeY;
     myfile >> goalposeX >> letter >> goalposeY;
@@ -111,7 +111,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'M')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
 
 
@@ -130,6 +130,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
         }
     }
     myfile.close();
+    return true;
 
 };
 
