@@ -5,6 +5,7 @@
 #include <queue>
 #include <limits>
 #include <memory>
+#include <vector>
 
 int get_key(int x_size, int y_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
@@ -18,6 +19,7 @@ struct Node
     double h=std::numeric_limits<double>::max();;
     double v=std::numeric_limits<double>::max();;
     Node(int x, int y): x(x), y(y){}
+    friend bool operator>(Node& lhs, Node& rhs);
 };
 
 class Graph

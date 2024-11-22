@@ -6,6 +6,13 @@
 
 using std::cout;
 
+bool operator> (Node& lhs, Node& rhs)
+{
+    double lhs_f = lhs.g + lhs.h;
+    double rhs_f = rhs.g + rhs.h;
+    return lhs_f > rhs_f;
+}
+
 void plannerAstar()
 {
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
@@ -15,13 +22,18 @@ void plannerAstar()
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
 }
 
-void plannerDstarLite()
+std::vector<std::pair<int,int>> plannerDstarLite()
 {
+    std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using D* Lite planner\n";
+    std::unordered_map<int, Node> closed_list;
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
+
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+    return plan;
 }
 
 void plannerAnytimeDstar()
