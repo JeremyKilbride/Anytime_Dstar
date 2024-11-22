@@ -7,11 +7,13 @@
 #include <queue>
 #include <limits>
 #include <memory>
+#include <vector>
 #include <fstream>
 #include <sstream>
 #ifndef MAPS_DIR
-#define MAPS_DIR = "maps"
+#define MAPS_DIR "maps"
 #endif
+
 
 int get_key(int x_size, int y_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
@@ -26,7 +28,7 @@ struct Node
     double v=std::numeric_limits<double>::max();;
 
     Node(int x, int y): x(x), y(y){}
-
+    friend bool operator>(Node& lhs, Node& rhs);
     Node(){}
 };
 
@@ -53,7 +55,6 @@ class Graph
         }
 
 };
-
 void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
     std::string mapDirPath = MAPS_DIR;
     std::string mapFilePath = mapDirPath + "/" + map_name;
