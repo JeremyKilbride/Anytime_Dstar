@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string>
 #include <cctype>
-
+#include <queue>
 using std::cout;
 
 void plannerAstar(std::string map_name)
@@ -21,7 +21,11 @@ void plannerAstar(std::string map_name)
     std::cout << "\n"<< "robot pose: " << start_node.x <<","<<start_node.y << "\n";
     std::cout << "\n"<< "goal pose: " << goal_node.x <<","<<goal_node.y << "\n";
     std::cout << "\n"<< "first map entry " << map[0] << "\n";
- 
+    int closed[x_size*y_size] = {};
+    
+    Graph Astar_graph(x_size,y_size);
+    Astar_graph.addNode(start_node);
+    Astar_graph.addNode(goal_node);
 
 
 
