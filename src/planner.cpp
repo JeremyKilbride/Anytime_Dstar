@@ -6,6 +6,7 @@
 
 using std::cout;
 
+
 bool operator> (Node& lhs, Node& rhs)
 {
     double lhs_f = lhs.g + lhs.h;
@@ -13,10 +14,27 @@ bool operator> (Node& lhs, Node& rhs)
     return lhs_f > rhs_f;
 }
 
-void plannerAstar()
+
+void plannerAstar(std::string map_name)
 {
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using A* planner\n";
+    int* map;
+    int x_size;
+    int y_size;
+    Node start_node;
+    Node goal_node;
+    read_map(map_name,map,x_size,y_size,start_node,goal_node);
+    std::cout << "\n"<< "x_size: " << x_size << "\n";
+    std::cout << "\n"<< "y_size: " << y_size << "\n";
+    std::cout << "\n"<< "robot pose: " << start_node.x <<","<<start_node.y << "\n";
+    std::cout << "\n"<< "goal pose: " << goal_node.x <<","<<goal_node.y << "\n";
+    std::cout << "\n"<< "first map entry " << map[0] << "\n";
+ 
+
+
+
+
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
@@ -71,7 +89,7 @@ int main(int argc, char** argv)
     switch (which)
     {
     case planner::ASTAR:
-        plannerAstar();
+        plannerAstar(map_path);
         break;
     case planner::DSTAR_LITE:
         plannerDstarLite();
