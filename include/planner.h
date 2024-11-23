@@ -39,7 +39,10 @@ class Graph
         int x_size;
         int y_size;
     public:
-        Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){}
+        Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
+            nodeMap.reserve(x_size*y_size);
+        }
+
         
         void addNode(Node newNode){
             nodeMap.emplace(get_key(x_size,y_size,newNode.x,newNode.y),newNode);
@@ -52,6 +55,16 @@ class Graph
             }else{
                 return std::make_shared<Node>(it->second);
             }
+        }
+
+
+        std::shared_ptr<Node> get(int idx){
+            auto it = nodeMap.find(idx);
+            if(it==nodeMap.end()){
+                return nullptr;
+            }
+            else
+                return std::make_shared<Node>(it->second);
         }
 
 };

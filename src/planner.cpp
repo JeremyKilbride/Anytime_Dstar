@@ -5,9 +5,38 @@
 #include <cctype>
 
 using std::cout;
+void compute_h(Node& s){//TODO:update this
+    s.h=0;
+}
+
+//function used by d* to calculate g val of a state
+void update_node(Graph g, Node& s,int x_size, int y_size, int* map){
+    int dx[8]={0,1,0,-1,1,-1,-1,1};
+    int dy[8]={1,0,-1,0,1,-1,1,-1};
+    double best_g=std::numeric_limits<double>::max();
+    //loop over all successors 
+    for(int i=0;i<8;++i){
+        int idx=get_key(x_size,y_size,s.x+dx[i],s.y+dy[i]);
+        std::shared_ptr<Node> ptr_successor=g.get(idx);
+        //check successor if null
+        if (ptr_successor){
+            double g=ptr_successor->v+1;
+            if(g<best_g){
+                best_g=g;
+            }
+        }
+        //push new states into graph        
+        else{
+            Node new_state(s.x+dx[i],s.y+dy[i]);
+            compute_h(new_state);
+            g.addNode(new_state);
+        }
+    }
+    s.g=best_g;
+}
 
 
-bool operator> (Node& lhs, Node& rhs)
+bool operator> (const Node& lhs,const Node& rhs)
 {
     double lhs_f = lhs.g + lhs.h;
     double rhs_f = rhs.g + rhs.h;
@@ -44,6 +73,29 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
     std::unordered_map<int, Node> closed_list;
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
+    std::unordered_map <int, Node> inconsistent_list;
+    goal.g=0;
+    Graph g(x_size,y_size);
+    //while f_goal > min f in open
+    while(start>open_list.top() && !open_list.empty()){
+        //get top item from open 
+        Node state=open_list.top();
+        open_list.pop();
+        //check consistency of state i.e. v(s)>g(s)
+        if (state.v>state.g){
+            state.v=state.g;
+        //get successors and calculate costs
+        //if g value lowered and successor not in closed insert into open 
+        //else if g lowered and in closed insert into incons
+
+        }
+        else{
+            state.v=std::numeric_limits<double>::max();
+        }
+
+
+    }
+
 
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
