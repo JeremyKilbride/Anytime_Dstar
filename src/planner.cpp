@@ -17,10 +17,18 @@ void update_node(Graph g, Node& s,int x_size, int y_size, int* map){
     //loop over all successors 
     for(int i=0;i<8;++i){
         int idx=get_key(x_size,y_size,s.x+dx[i],s.y+dy[i]);
+        int map_val=map[idx];
+        double cost;
+        if (map_val==0){
+            cost=1;
+        }
+        else{
+            cost=std::numeric_limits<double>::max();
+        }
         std::shared_ptr<Node> ptr_successor=g.get(idx);
         //check successor if null
         if (ptr_successor){
-            double g=ptr_successor->v+1;
+            double g=ptr_successor->v+cost;
             if(g<best_g){
                 best_g=g;
             }
@@ -75,28 +83,75 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
     std::unordered_map <int, Node> inconsistent_list;
     goal.g=0;
+    int dx[8]={0,1,0,-1,1,-1,-1,1};
+    int dy[8]={1,0,-1,0,1,-1,1,-1};
     Graph g(x_size,y_size);
+    int num_expanded=0;
     //while f_goal > min f in open
     while(start>open_list.top() && !open_list.empty()){
         //get top item from open 
         Node state=open_list.top();
         open_list.pop();
-        //check consistency of state i.e. v(s)>g(s)
-        if (state.v>state.g){
+        //state is consistent or overconsistent
+        if (state.v>=state.g){
             state.v=state.g;
-        //get successors and calculate costs
-        //if g value lowered and successor not in closed insert into open 
-        //else if g lowered and in closed insert into incons
-
+            //expand state
+            for(int i=0;i<8;++i){
+                int idx=get_key(x_size,y_size,state.x+dx[i],state.y+dy[i]);
+                int map_val=map[idx];
+                double cost;
+                if (map_val==0){
+                    cost=1;
+                }      
+                else{
+                    cost=std::numeric_limits<double>::max();
+                }
+                //get successor
+                std::shared_ptr<Node> ptr_successor=g.get(idx);
+                if (ptr_successor){
+                    if(ptr_successor->g > state.g + cost){
+                        ptr_successor->g = state.g + cost;
+                        //if g value lowered and successor not in closed insert into open 
+                        if (closed_list.find(idx)!=closed_list.end()){
+                            open_list.emplace(*ptr_successor);
+                        }
+                        //else if g lowered and in closed insert into incons
+                        else{
+                            inconsistent_list.emplace(idx,*ptr_successor);
+                        }
+                    }
+                }   
+                //successor not in graph, so create new node and emplace in graph
+                else{
+                    Node new_node(state.x+dx[i],state.y+dy[i]);
+                    compute_h(new_node);
+                    g.addNode(new_node);
+                    open_list.emplace(new_node); 
+                }
+            }
         }
+        //state is under consistent
         else{
             state.v=std::numeric_limits<double>::max();
+            //update state and all successors
+            update_node(g,state,x_size,y_size,map);
+            open_list.emplace(state); 
+            for (int i=0;i<8;++i){
+                int idx=get_key(x_size,y_size,state.x+dx[i],state.y);
+                std::shared_ptr<Node> state_ptr=g.get(idx);
+                if (state_ptr){
+                    update_node(g,*state_ptr,x_size,y_size,map);
+                } 
+                else{
+                    Node new_node(state.x+dx[i],state.y);
+                    compute_h(new_node);
+                    g.addNode(new_node);
+                }
+            }
         }
-
-
     }
 
-
+    //TODO:implement backtracking
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";

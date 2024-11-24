@@ -44,7 +44,7 @@ class Graph
         }
 
         
-        void addNode(Node newNode){
+        void addNode(Node& newNode){
             nodeMap.emplace(get_key(x_size,y_size,newNode.x,newNode.y),newNode);
         }
 
