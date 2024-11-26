@@ -83,6 +83,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
     std::unordered_map <int, Node> inconsistent_list;
     goal.g=0;
+    compute_h(goal);
+    open_list.emplace(goal);
     int dx[8]={0,1,0,-1,1,-1,-1,1};
     int dy[8]={1,0,-1,0,1,-1,1,-1};
     Graph g(x_size,y_size);
@@ -97,6 +99,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             state.v=state.g;
             //expand state
             for(int i=0;i<8;++i){
+                cout<<"got x: "<<state.x+dx[i]<<", y: "<<state.y+dy[i]<<"\n";
                 int idx=get_key(x_size,y_size,state.x+dx[i],state.y+dy[i]);
                 int map_val=map[idx];
                 double cost;
