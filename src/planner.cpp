@@ -125,6 +125,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
                     }
                     if(ptr_successor->g > state_ptr->g + cost){
                         ptr_successor->g = state_ptr->g + cost;
+                        ptr_successor->parent_idx=state_idx;
                         g.set(*ptr_successor);
                         //if g value lowered and successor not in closed insert into open 
                         if (closed_list.find(idx)==closed_list.end()){
@@ -155,6 +156,11 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     }
 
     //TODO:implement backtracking
+
+    Node found_start=closed_list[start_idx];
+    
+    cout<<"got start state "<<found_start.x<<", "<<found_start.y<<"\n";
+    
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\n";
