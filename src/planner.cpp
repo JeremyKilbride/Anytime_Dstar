@@ -6,14 +6,30 @@
 
 using std::cout;
 
-//function used by d* to calculate g val of a state
-void update_node(Graph g, Node& s,int x_size, int y_size, int* map){
+std::vector<NodePtr> get_successors(NodePtr s, Graph& g){
+    std::vector<NodePtr> successors;
+    successors.reserve(8);
     int dx[8]={0,1,0,-1,1,-1,-1,1};
     int dy[8]={1,0,-1,0,1,-1,1,-1};
+    for (int i=0;i<8;++i){ 
+        int successor_x=s->x+dx[i];
+        int successor_y=s->y+dy[i];
+        int idx=get_key(g._x_size(),g._y_size(),successor_x,successor_y);
+        if(0<successor_x && successor_x<g._x_size() && 0<successor_y && successor_y<g._y_size()){
+            NodePtr successor_ptr=g.getAddNode(idx);
+            successors.emplace_back(successor_ptr);
+        }
+    }
+    return successors; 
+}
+
+//function used by d* to calculate g val of a state
+void update_node(Graph& g, NodePtr s,int x_size, int y_size, int* map){
     double best_g=std::numeric_limits<double>::max();
+    std::vector<NodePtr> successors=get_successors(s,g);
     //loop over all successors 
-    for(int i=0;i<8;++i){
-        int idx=get_key(x_size,y_size,s.x+dx[i],s.y+dy[i]);
+    for(NodePtr ptr_successor: successors){
+        int idx=get_key(x_size,y_size,ptr_successor->x,ptr_successor->y);
         int map_val=map[idx];
         double cost;
         if (map_val==0){
@@ -22,13 +38,12 @@ void update_node(Graph g, Node& s,int x_size, int y_size, int* map){
         else{
             cost=std::numeric_limits<double>::max();
         }
-        std::shared_ptr<Node> ptr_successor=g.getAddNode(idx);
         double g=ptr_successor->v+cost;
         if(g<best_g){
             best_g=g;
         }
     }
-    s.g=best_g;
+    s->g=best_g;
 }
 
 
@@ -38,6 +53,7 @@ bool operator> (const Node& lhs,const Node& rhs)
     double rhs_f = rhs.g + rhs.h;
     return lhs_f > rhs_f;
 }
+
 
 
 void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
@@ -87,47 +103,53 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         Node state=open_list.top();
         open_list.pop();
         std::shared_ptr<Node> state_ptr=g.get(state);
+        
+        cout<<"got state with x,y: "<<state.x<<", "<<state.y<<" and g,h"<<state.g<<", "<<state.h<<"\n";
+        cout<<"got state with x,y: "<<state_ptr->x<<", "<<state_ptr->y<<" and g,h"<<state_ptr->g<<", "<<state_ptr->h<<"\n";
         //state is consistent or overconsistent
         if (state_ptr->v >= state_ptr->g){
             state_ptr->v = state_ptr->g;
-            //expand state
+            //expand state if not already expanded
             ++num_expanded;
-            for(int i=0;i<8;++i){
-                int idx=get_key(x_size,y_size,state_ptr->x+dx[i],state_ptr->y+dy[i]);
-                int map_val=map[idx];
-                double cost;
-                if (map_val==0){
-                    cost=1;
-                }      
-                else{
-                    cost=std::numeric_limits<double>::max();
-                }
-                //get successor
-                std::shared_ptr<Node> ptr_successor=g.getAddNode(idx);
-                if(ptr_successor->g > state.g + cost){
-                    ptr_successor->g = state.g + cost;
-                    //if g value lowered and successor not in closed insert into open 
-                    if (closed_list.find(idx)==closed_list.end()){
-                        open_list.emplace(*ptr_successor);
-                    }
-                    //else if g lowered and in closed insert into incons
+            int state_idx=get_key(x_size,y_size,state_ptr->x,state_ptr->y);    
+            //if (closed_list.find(state_idx)==closed_list.end()){
+                std::vector<NodePtr> successors=get_successors(state_ptr,g);
+                for(NodePtr ptr_successor: successors){
+                    int idx=get_key(x_size,y_size,ptr_successor->x,ptr_successor->y);    
+                    int map_val=map[idx];
+                    double cost;
+                    if (map_val==0){
+                        cost=1;
+                    }      
                     else{
-                        inconsistent_list.emplace(idx,*ptr_successor);
+                        cost=std::numeric_limits<double>::max();
+                    }
+                    if(ptr_successor->g > state_ptr->g + cost){
+                        ptr_successor->g = state_ptr->g + cost;
+                        //if g value lowered and successor not in closed insert into open 
+                        if (closed_list.find(idx)==closed_list.end()){
+                            cout<<"adding to open\n";
+                            open_list.emplace(*ptr_successor);
+                        }
+                        //else if g lowered and in closed insert into incons
+                        else{
+                            inconsistent_list.emplace(idx,*ptr_successor);
+                        }
                     }
                 }
-            }   
-         }
+                //add state to closed_list after expansion
+                closed_list.emplace(state_idx,*state_ptr);   
+            }
+        //}
         //state is under consistent
         else{
             state_ptr->v=std::numeric_limits<double>::max();
             //update state and all successors
-            update_node(g,*state_ptr,x_size,y_size,map);
-            open_list.emplace(*state_ptr); 
-            for (int i=0;i<8;++i){
-                int idx=get_key(x_size,y_size,state.x+dx[i],state.y);
-                std::shared_ptr<Node> successor_ptr=g.getAddNode(idx);
-                //TODO:finish logic for updating successors
-                update_node(g,*successor_ptr,x_size,y_size,map);
+            update_node(g,state_ptr,x_size,y_size,map);
+            open_list.emplace(*state_ptr);
+            std::vector<NodePtr> successors=get_successors(state_ptr,g);
+            for (NodePtr successor_ptr: successors){
+                update_node(g,successor_ptr,x_size,y_size,map);
                 open_list.emplace(*successor_ptr);
             }
         }
@@ -136,6 +158,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     //TODO:implement backtracking
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
+    cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\n";
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
     return plan;
 }

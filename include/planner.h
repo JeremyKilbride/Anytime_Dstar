@@ -16,6 +16,7 @@
 
 using std::cout;
 
+
 int get_key(int x_size, int y_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
 };
@@ -48,6 +49,8 @@ struct Node
     }
 };
 
+using NodePtr=std::shared_ptr<Node>;
+
 class Graph
 {
     private:
@@ -61,19 +64,14 @@ class Graph
 
         
         void addNode(Node& newNode){
-            nodeMap.emplace(get_key(x_size,y_size,newNode.x,newNode.y),newNode);
+            int idx=get_key(x_size,y_size,newNode.x,newNode.y);
+            nodeMap.emplace(idx,newNode);
         }
         
-        void set(int idx, const Node& state){
-            if(nodeMap.find(idx)!=nodeMap.end()){
-                nodeMap[idx]=state;
-            }
-            else{
-                cout<<"something went wrong with setting a node";
-            }
-            return;
-        }
+        int _x_size(){return x_size;}
 
+        int _y_size(){return y_size;}
+        
         std::shared_ptr<Node> getAddNode(int idx){
             auto it=nodeMap.find(idx);
             if (it!=nodeMap.end()){
@@ -82,15 +80,21 @@ class Graph
             else{
                 int new_x=idx%x_size; 
                 int new_y=idx/x_size; 
-                Node newNode(new_x,new_y);
-                newNode.compute_h();
-                addNode(newNode);
-                return std::make_shared<Node>(nodeMap[idx]);
+                Node _newNode(new_x,new_y);
+                _newNode.compute_h();
+                addNode(_newNode);
+                auto it=nodeMap.find(idx);
+                if (it==nodeMap.end()){
+                    return nullptr;
+                }
+                else
+                    return std::make_shared<Node>(it->second);
             }
         }
 
         std::shared_ptr<Node> get(Node newNode){
-            auto it = nodeMap.find(get_key(x_size,y_size,newNode.x,newNode.y));
+            int idx=get_key(x_size,y_size,newNode.x,newNode.y);
+            auto it = nodeMap.find(idx);
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
@@ -98,6 +102,12 @@ class Graph
             }
         }
 
+        void print()
+        {
+            for (auto item: nodeMap){
+                cout<<"key: "<<item.first<<"\n";
+            }
+        }
 
         std::shared_ptr<Node> get(int idx){
             auto it = nodeMap.find(idx);
