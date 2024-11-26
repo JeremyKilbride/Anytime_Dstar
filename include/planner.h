@@ -29,8 +29,15 @@ struct Node
     double v=std::numeric_limits<double>::max();;
 
     Node(int x, int y): x(x), y(y){}
+
     friend bool operator>(Node& lhs, Node& rhs);
+
     Node(){}
+
+    void compute_h(){//TODO:update this
+        this->h=0;
+    }
+
     Node operator=(const Node& incoming){
         this->x=incoming.x;
         this->y=incoming.y;
@@ -73,7 +80,12 @@ class Graph
                 return std::make_shared<Node>(it->second);
             }
             else{
-                return nullptr; //TODO: actually add a new node  
+                int new_x=idx%x_size; 
+                int new_y=idx/x_size; 
+                Node newNode(new_x,new_y);
+                newNode.compute_h();
+                addNode(newNode);
+                return std::make_shared<Node>(nodeMap[idx]);
             }
         }
 

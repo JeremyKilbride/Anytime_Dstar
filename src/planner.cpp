@@ -5,9 +5,6 @@
 #include <cctype>
 
 using std::cout;
-void compute_h(Node& s){//TODO:update this
-    s.h=0;
-}
 
 //function used by d* to calculate g val of a state
 void update_node(Graph g, Node& s,int x_size, int y_size, int* map){
@@ -25,19 +22,10 @@ void update_node(Graph g, Node& s,int x_size, int y_size, int* map){
         else{
             cost=std::numeric_limits<double>::max();
         }
-        std::shared_ptr<Node> ptr_successor=g.get(idx);
-        //check successor if null
-        if (ptr_successor){
-            double g=ptr_successor->v+cost;
-            if(g<best_g){
-                best_g=g;
-            }
-        }
-        //push new states into graph        
-        else{
-            Node new_state(s.x+dx[i],s.y+dy[i]);
-            compute_h(new_state);
-            g.addNode(new_state);
+        std::shared_ptr<Node> ptr_successor=g.getAddNode(idx);
+        double g=ptr_successor->v+cost;
+        if(g<best_g){
+            best_g=g;
         }
     }
     s.g=best_g;
@@ -83,24 +71,29 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
     std::unordered_map <int, Node> inconsistent_list;
     goal.g=0;
-    compute_h(goal);
+    int start_idx= get_key(x_size,y_size,start.x, start.y);
+    goal.compute_h();
+    start.compute_h();
     open_list.emplace(goal);
     int dx[8]={0,1,0,-1,1,-1,-1,1};
     int dy[8]={1,0,-1,0,1,-1,1,-1};
     Graph g(x_size,y_size);
+    g.addNode(goal);
+    g.addNode(start);
     int num_expanded=0;
-    //while f_goal > min f in open
-    while(start>open_list.top() && !open_list.empty()){
+    //while f_start > min f in open
+    while(*g.get(start_idx)>open_list.top() && !open_list.empty()){
         //get top item from open 
         Node state=open_list.top();
         open_list.pop();
+        std::shared_ptr<Node> state_ptr=g.get(state);
         //state is consistent or overconsistent
-        if (state.v>=state.g){
-            state.v=state.g;
+        if (state_ptr->v >= state_ptr->g){
+            state_ptr->v = state_ptr->g;
             //expand state
             for(int i=0;i<8;++i){
-                cout<<"got x: "<<state.x+dx[i]<<", y: "<<state.y+dy[i]<<"\n";
-                int idx=get_key(x_size,y_size,state.x+dx[i],state.y+dy[i]);
+                cout<<"got x: "<<state_ptr->x+dx[i]<<", y: "<<state_ptr->y+dy[i]<<"\n";
+                int idx=get_key(x_size,y_size,state_ptr->x+dx[i],state_ptr->y+dy[i]);
                 int map_val=map[idx];
                 double cost;
                 if (map_val==0){
@@ -110,46 +103,32 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
                     cost=std::numeric_limits<double>::max();
                 }
                 //get successor
-                std::shared_ptr<Node> ptr_successor=g.get(idx);
-                if (ptr_successor){
-                    if(ptr_successor->g > state.g + cost){
-                        ptr_successor->g = state.g + cost;
-                        //if g value lowered and successor not in closed insert into open 
-                        if (closed_list.find(idx)!=closed_list.end()){
-                            open_list.emplace(*ptr_successor);
-                        }
-                        //else if g lowered and in closed insert into incons
-                        else{
-                            inconsistent_list.emplace(idx,*ptr_successor);
-                        }
+                std::shared_ptr<Node> ptr_successor=g.getAddNode(idx);
+                if(ptr_successor->g > state.g + cost){
+                    ptr_successor->g = state.g + cost;
+                    //if g value lowered and successor not in closed insert into open 
+                    if (closed_list.find(idx)!=closed_list.end()){
+                        open_list.emplace(*ptr_successor);
                     }
-                }   
-                //successor not in graph, so create new node and emplace in graph
-                else{
-                    Node new_node(state.x+dx[i],state.y+dy[i]);
-                    compute_h(new_node);
-                    g.addNode(new_node);
-                    open_list.emplace(new_node); 
+                    //else if g lowered and in closed insert into incons
+                    else{
+                        inconsistent_list.emplace(idx,*ptr_successor);
+                    }
                 }
-            }
-        }
+            }   
+         }
         //state is under consistent
         else{
-            state.v=std::numeric_limits<double>::max();
+            state_ptr->v=std::numeric_limits<double>::max();
             //update state and all successors
-            update_node(g,state,x_size,y_size,map);
-            open_list.emplace(state); 
+            update_node(g,*state_ptr,x_size,y_size,map);
+            open_list.emplace(*state_ptr); 
             for (int i=0;i<8;++i){
                 int idx=get_key(x_size,y_size,state.x+dx[i],state.y);
-                std::shared_ptr<Node> state_ptr=g.get(idx);
-                if (state_ptr){
-                    update_node(g,*state_ptr,x_size,y_size,map);
-                } 
-                else{
-                    Node new_node(state.x+dx[i],state.y);
-                    compute_h(new_node);
-                    g.addNode(new_node);
-                }
+                std::shared_ptr<Node> successor_ptr=g.getAddNode(idx);
+                //TODO:finish logic for updating successors
+                update_node(g,*successor_ptr,x_size,y_size,map);
+                open_list.emplace(*successor_ptr);
             }
         }
     }
