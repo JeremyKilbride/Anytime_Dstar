@@ -92,6 +92,16 @@ class Graph
             }
         }
 
+        void set(Node s){
+            int idx=get_key(x_size,y_size,s.x,s.y);
+            auto it=nodeMap.find(idx);
+            if (it==nodeMap.end()){
+                cout<<"something went wrong with setting\n";
+                return;
+            }
+            nodeMap[idx]=s;
+        }
+
         std::shared_ptr<Node> get(Node newNode){
             int idx=get_key(x_size,y_size,newNode.x,newNode.y);
             auto it = nodeMap.find(idx);

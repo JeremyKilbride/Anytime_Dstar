@@ -44,6 +44,7 @@ void update_node(Graph& g, NodePtr s,int x_size, int y_size, int* map){
         }
     }
     s->g=best_g;
+    g.set(*s);
 }
 
 
@@ -104,8 +105,6 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         open_list.pop();
         std::shared_ptr<Node> state_ptr=g.get(state);
         
-        cout<<"got state with x,y: "<<state.x<<", "<<state.y<<" and g,h"<<state.g<<", "<<state.h<<"\n";
-        cout<<"got state with x,y: "<<state_ptr->x<<", "<<state_ptr->y<<" and g,h"<<state_ptr->g<<", "<<state_ptr->h<<"\n";
         //state is consistent or overconsistent
         if (state_ptr->v >= state_ptr->g){
             state_ptr->v = state_ptr->g;
@@ -126,9 +125,9 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
                     }
                     if(ptr_successor->g > state_ptr->g + cost){
                         ptr_successor->g = state_ptr->g + cost;
+                        g.set(*ptr_successor);
                         //if g value lowered and successor not in closed insert into open 
                         if (closed_list.find(idx)==closed_list.end()){
-                            cout<<"adding to open\n";
                             open_list.emplace(*ptr_successor);
                         }
                         //else if g lowered and in closed insert into incons
