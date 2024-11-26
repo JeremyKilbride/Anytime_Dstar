@@ -91,8 +91,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         if (state_ptr->v >= state_ptr->g){
             state_ptr->v = state_ptr->g;
             //expand state
+            ++num_expanded;
             for(int i=0;i<8;++i){
-                cout<<"got x: "<<state_ptr->x+dx[i]<<", y: "<<state_ptr->y+dy[i]<<"\n";
                 int idx=get_key(x_size,y_size,state_ptr->x+dx[i],state_ptr->y+dy[i]);
                 int map_val=map[idx];
                 double cost;
@@ -107,7 +107,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
                 if(ptr_successor->g > state.g + cost){
                     ptr_successor->g = state.g + cost;
                     //if g value lowered and successor not in closed insert into open 
-                    if (closed_list.find(idx)!=closed_list.end()){
+                    if (closed_list.find(idx)==closed_list.end()){
                         open_list.emplace(*ptr_successor);
                     }
                     //else if g lowered and in closed insert into incons
