@@ -15,8 +15,15 @@
 #endif
 
 
-int get_key(int x_size, int y_size, int x, int y){ //IF MAPS ARE 0 indexed
+int get_key(int x_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
+};
+
+int get_key(int x_size, Node current){ //IF MAPS ARE 0 indexed
+    return current.y*x_size + current.x;
+};
+int get_key(int x_size, std::shared_ptr<Node> current){
+    return current->y*x_size + current->x;
 };
 
 struct Node
@@ -42,17 +49,30 @@ class Graph
         Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){}
         
         void addNode(Node newNode){
-            nodeMap.emplace(get_key(x_size,y_size,newNode.x,newNode.y),newNode);
+            nodeMap.emplace(get_key(x_size,newNode.x,newNode.y),newNode);
+        }
+        void addNode(int x, int y){
+            Node newNode(x,y);
+            nodeMap.emplace(get_key(x_size,newNode.x,newNode.y),newNode);
         }
 
         std::shared_ptr<Node> get(Node newNode){
-            auto it = nodeMap.find(get_key(x_size,y_size,newNode.x,newNode.y));
+            auto it = nodeMap.find(get_key(x_size,newNode.x,newNode.y));
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
                 return std::make_shared<Node>(it->second);
             }
         }
+        std::shared_ptr<Node> get(int x, int y){
+            auto it = nodeMap.find(get_key(x_size,x,y));
+            if(it==nodeMap.end()){
+                return nullptr;
+            }else{
+                return std::make_shared<Node>(it->second);
+            }
+        }
+
 
 };
 void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
