@@ -14,6 +14,7 @@
 #define MAPS_DIR "maps"
 #endif
 
+using std::cout;
 
 int get_key(int x_size, int y_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
@@ -30,6 +31,14 @@ struct Node
     Node(int x, int y): x(x), y(y){}
     friend bool operator>(Node& lhs, Node& rhs);
     Node(){}
+    Node operator=(const Node& incoming){
+        this->x=incoming.x;
+        this->y=incoming.y;
+        this->g=incoming.g;
+        this->h=incoming.h;
+        this->v=incoming.v;
+        return *this;
+    }
 };
 
 class Graph
@@ -46,6 +55,26 @@ class Graph
         
         void addNode(Node& newNode){
             nodeMap.emplace(get_key(x_size,y_size,newNode.x,newNode.y),newNode);
+        }
+        
+        void set(int idx, const Node& state){
+            if(nodeMap.find(idx)!=nodeMap.end()){
+                nodeMap[idx]=state;
+            }
+            else{
+                cout<<"something went wrong with setting a node";
+            }
+            return;
+        }
+
+        std::shared_ptr<Node> getAddNode(int idx){
+            auto it=nodeMap.find(idx);
+            if (it!=nodeMap.end()){
+                return std::make_shared<Node>(it->second);
+            }
+            else{
+                return nullptr; //TODO: actually add a new node  
+            }
         }
 
         std::shared_ptr<Node> get(Node newNode){
