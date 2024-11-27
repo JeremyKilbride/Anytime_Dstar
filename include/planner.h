@@ -14,6 +14,8 @@
 #define MAPS_DIR "maps"
 #endif
 
+using std::cout;
+
 
 int get_key(int x_size, int y_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
@@ -24,13 +26,32 @@ struct Node
     int x;
     int y;
     double g=std::numeric_limits<double>::max();
-    double h=std::numeric_limits<double>::max();;
-    double v=std::numeric_limits<double>::max();;
+    double h=std::numeric_limits<double>::max();
+    double v=std::numeric_limits<double>::max();
+    int parent_idx=-1;
 
     Node(int x, int y): x(x), y(y){}
+
     friend bool operator>(Node& lhs, Node& rhs);
+
     Node(){}
+
+    void compute_h(){//TODO:update this
+        this->h=0;
+    }
+
+    Node operator=(const Node& incoming){
+        this->x=incoming.x;
+        this->y=incoming.y;
+        this->g=incoming.g;
+        this->h=incoming.h;
+        this->v=incoming.v;
+        this->parent_idx=incoming.parent_idx;
+        return *this;
+    }
 };
+
+using NodePtr=std::shared_ptr<Node>;
 
 class Graph
 {
@@ -38,15 +59,56 @@ class Graph
         std::unordered_map<int, Node> nodeMap;
         int x_size;
         int y_size;
+        int start_idx;
     public:
-        Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){}
+        Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
+            nodeMap.reserve(x_size*y_size);
+        }
+    
+        void set_start(int s){this->start_idx=s;}    
+    
+        void addNode(Node& newNode){
+            int idx=get_key(x_size,y_size,newNode.x,newNode.y);
+            nodeMap.emplace(idx,newNode);
+        }
         
-        void addNode(Node newNode){
-            nodeMap.emplace(get_key(x_size,y_size,newNode.x,newNode.y),newNode);
+        int _x_size(){return x_size;}
+
+        int _y_size(){return y_size;}
+        
+        std::shared_ptr<Node> getAddNode(int idx){
+            auto it=nodeMap.find(idx);
+            if (it!=nodeMap.end()){
+                return std::make_shared<Node>(it->second);
+            }
+            else{
+                int new_x=idx%x_size; 
+                int new_y=idx/x_size; 
+                Node _newNode(new_x,new_y);
+                _newNode.compute_h();
+                addNode(_newNode);
+                auto it=nodeMap.find(idx);
+                if (it==nodeMap.end()){
+                    return nullptr;
+                }
+                else
+                    return std::make_shared<Node>(it->second);
+            }
         }
 
-        std::shared_ptr<Node> get(Node newNode){
-            auto it = nodeMap.find(get_key(x_size,y_size,newNode.x,newNode.y));
+        void set(Node& s){
+            int idx=get_key(x_size,y_size,s.x,s.y);
+            auto it=nodeMap.find(idx);
+            if (it==nodeMap.end()){
+                cout<<"something went wrong with setting\n";
+                return;
+            }
+            nodeMap[idx]=s;
+        }
+
+        std::shared_ptr<Node> get(Node& newNode){
+            int idx=get_key(x_size,y_size,newNode.x,newNode.y);
+            auto it = nodeMap.find(idx);
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
@@ -54,8 +116,24 @@ class Graph
             }
         }
 
+        void print()
+        {
+            for (auto item: nodeMap){
+                cout<<"key: "<<item.first<<"\n";
+            }
+        }
+
+        std::shared_ptr<Node> get(int idx){
+            auto it = nodeMap.find(idx);
+            if(it==nodeMap.end()){
+                return nullptr;
+            }
+            else
+                return std::make_shared<Node>(it->second);
+        }
+
 };
-void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
+bool read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
     std::string mapDirPath = MAPS_DIR;
     std::string mapFilePath = mapDirPath + "/" + map_name;
 
@@ -63,7 +141,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     myfile.open(mapFilePath);
     if (!myfile.is_open()) {
         std::cout << "Failed to open the file:" << mapFilePath << std::endl;
-        return;
+        return false;
     }
 
     // read map size
@@ -75,7 +153,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'N')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
     myfile >> x_size >> letter >> y_size;
     std:: cout << "map size: " << x_size << letter << y_size << std::endl;
@@ -86,7 +164,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'R')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
 
     myfile >> robotposeX >> letter >> robotposeY;
@@ -98,7 +176,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'G')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
     int goalposeX, goalposeY;
     myfile >> goalposeX >> letter >> goalposeY;
@@ -111,7 +189,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
     if (letter != 'M')
     {
         std::cout << "error parsing file" << std::endl;
-        return;
+        return false;
     }
 
 
@@ -130,6 +208,7 @@ void read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
         }
     }
     myfile.close();
+    return true;
 
 };
 
