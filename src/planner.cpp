@@ -65,14 +65,14 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     cout<<"using A* planner\n";
     std::cout << "\n"<< "x_size: " << x_size << "\n";
     std::cout << "\n"<< "y_size: " << y_size << "\n";
-    std::cout << "\n"<< "robot pose: " << start_node.x <<","<<start_node.y << "\n";
-    std::cout << "\n"<< "goal pose: " << goal_node.x <<","<<goal_node.y << "\n";
+    std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
+    std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
     std::cout << "\n"<< "first map entry " << map[0] << "\n";
     int closed[x_size*y_size] = {};
     
     Graph Astar_graph(x_size,y_size);
-    Astar_graph.addNode(start_node);
-    Astar_graph.addNode(goal_node);
+    Astar_graph.addNode(start);
+    Astar_graph.addNode(goal);
 
 
 
