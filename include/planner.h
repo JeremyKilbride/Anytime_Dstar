@@ -46,6 +46,7 @@ struct Node
         this->g=incoming.g;
         this->h=incoming.h;
         this->v=incoming.v;
+        this->parent_idx=incoming.parent_idx;
         return *this;
     }
 };
@@ -58,12 +59,14 @@ class Graph
         std::unordered_map<int, Node> nodeMap;
         int x_size;
         int y_size;
+        int start_idx;
     public:
         Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
             nodeMap.reserve(x_size*y_size);
         }
-
-        
+    
+        void set_start(int s){this->start_idx=s;}    
+    
         void addNode(Node& newNode){
             int idx=get_key(x_size,y_size,newNode.x,newNode.y);
             nodeMap.emplace(idx,newNode);
@@ -93,7 +96,7 @@ class Graph
             }
         }
 
-        void set(Node s){
+        void set(Node& s){
             int idx=get_key(x_size,y_size,s.x,s.y);
             auto it=nodeMap.find(idx);
             if (it==nodeMap.end()){
@@ -103,7 +106,7 @@ class Graph
             nodeMap[idx]=s;
         }
 
-        std::shared_ptr<Node> get(Node newNode){
+        std::shared_ptr<Node> get(Node& newNode){
             int idx=get_key(x_size,y_size,newNode.x,newNode.y);
             auto it = nodeMap.find(idx);
             if(it==nodeMap.end()){
