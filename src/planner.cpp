@@ -13,11 +13,11 @@ std::vector<Node> get_successors(NodePtr s, Graph& g){
     successors.reserve(8);
     int dx[8]={0,1,0,-1,1,-1,-1,1};
     int dy[8]={1,0,-1,0,1,-1,1,-1};
-    int s_idx=get_key(g._x_size(),g._y_size(),s->x,s->y);
+    int s_idx=get_key(g._x_size(),s->x,s->y);
     for (int i=0;i<8;++i){ 
         int successor_x=s->x+dx[i];
         int successor_y=s->y+dy[i];
-        int idx=get_key(g._x_size(),g._y_size(),successor_x,successor_y);
+        int idx=get_key(g._x_size(),successor_x,successor_y);
         if(0<successor_x && successor_x<g._x_size() && 0<successor_y && successor_y<g._y_size()){
             NodePtr successor_ptr=g.getAddNode(idx);
             successor_ptr->parent_idx=s_idx;
@@ -33,7 +33,7 @@ void update_node(Graph& g, Node s,int x_size, int y_size, int* map){
     std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g);
     //loop over all successors 
     for(Node successor: successors){
-        int idx=get_key(x_size,y_size,successor.x,successor.y);
+        int idx=get_key(x_size,successor.x,successor.y);
         int map_val=map[idx];
         double cost;
         if (map_val==0){
@@ -63,9 +63,6 @@ double computeHeuristic(Node current, Node goal_node){
     return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
 };
 
-double computeHeuristic(Node current, Node goal_node){
-    return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
-};
 
 void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
 {
@@ -81,14 +78,14 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     int closed[x_size*y_size] = {};
     Graph Astar_graph(x_size,y_size);
     std::priority_queue<std::shared_ptr<Node>,std::vector<std::shared_ptr<Node>>> open;
-    open.push(std::make_shared<Node>(start_node));
-    Astar_graph.addNode(start_node);
-    Astar_graph.addNode(goal_node);
-    start_node.h = computeHeuristic(start_node,goal_node);
-    start_node.g =0;
-    goal_node.h = 0;
+    open.push(std::make_shared<Node>(start));
+    Astar_graph.addNode(start);
+    Astar_graph.addNode(goal);
+    start.h = computeHeuristic(start,goal);
+    start.g =0;
+    goal.h = 0;
 
-    while(!closed[get_key(x_size,goal_node)] && !open.empty()){ 
+    while(!closed[get_key(x_size,goal)] && !open.empty()){ 
             
         std::shared_ptr<Node> current = open.top();
         int s = get_key(x_size,current);
@@ -116,7 +113,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
                     
                     if(Astar_graph.get(xprime,yprime)==nullptr){
                         Node newNode(xprime,yprime);
-                        newNode.h = computeHeuristic(newNode,goal_node);
+                        newNode.h = computeHeuristic(newNode,goal);
                     }
 
                     
@@ -160,8 +157,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
     std::unordered_map <int, Node> inconsistent_list;
     goal.g=0;
-    int start_idx= get_key(x_size,y_size,start.x, start.y);
-    int goal_idx= get_key(x_size,y_size,goal.x, goal.y);
+    int start_idx= get_key(x_size,start.x, start.y);
+    int goal_idx= get_key(x_size,goal.x, goal.y);
     goal.compute_h();
     start.compute_h();
     open_list.emplace(goal);
@@ -185,10 +182,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             state_ptr->v = state_ptr->g;
             //expand state if not already expanded
             ++num_expanded;
-            int state_idx=get_key(x_size,y_size,state_ptr->x,state_ptr->y);             
+            int state_idx=get_key(x_size,state_ptr->x,state_ptr->y);             
             std::vector<Node> successors=get_successors(state_ptr,g);
             for(Node successor: successors){
-                int idx=get_key(x_size,y_size,successor.x,successor.y);    
+                int idx=get_key(x_size,successor.x,successor.y);    
                 int map_val=map[idx];
                 double cost;
                 if (map_val==0){
