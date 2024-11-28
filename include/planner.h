@@ -3,6 +3,7 @@
 
 
 #include <unordered_map>
+#include <unordered_set>
 #include <iostream>
 #include <queue>
 #include <limits>
@@ -13,7 +14,7 @@
 #ifndef MAPS_DIR
 #define MAPS_DIR "maps"
 #endif
-
+#define SENSOR_REACH 10
 using std::cout;
 
 
@@ -156,6 +157,29 @@ class Graph
         }
 
 };
+
+
+
+
+std::unordered_set<int> update_map(int*& current,int* global, int x_size, int y_size, int robotposeX, int robotposeY){
+    std::unordered_set<int> cell_changes;
+    
+    for(int i =0; i< x_size;i++){
+        for(int j=0; j<y_size;j++){
+            if(i>robotposeX-SENSOR_REACH && i<robotposeX+SENSOR_REACH){
+                if(j>robotposeY-SENSOR_REACH && j<robotposeY+SENSOR_REACH){
+                    if(current[get_key(i,j)] != global[get_key(i,j)]){
+                        current[get_key(i,j)] = global[get_key(i,j)];
+                        cell_changes.insert(get_key(i,j));
+                    }
+                    
+                }
+            }
+        }
+
+    }
+    return cell_changes;
+}
 
 bool read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& start_node, Node& goal_node){
     std::string mapDirPath = MAPS_DIR;
