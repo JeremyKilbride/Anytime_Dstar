@@ -114,6 +114,8 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
                     if(Astar_graph.get(xprime,yprime)==nullptr){
                         Node newNode(xprime,yprime);
                         newNode.h = computeHeuristic(newNode,goal);
+                        newNode.parent_idx = get_key(x,y);
+                        Astar_graph.addNode(newNode);
                     }
 
                     
@@ -121,7 +123,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
                     if(Astar_graph.get(xprime,yprime)->g > current->g+1){ //only update the gvalues for valid moves
                         
                         Astar_graph.get(xprime,yprime)->g = current->g+1;
-                        //Come in latrer and finish this up
+                        open.push(std::make_shared<Node>(Astar_graph.get(xprime,yprime)));
 
                         
                                 
@@ -135,8 +137,20 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
         }
         
     }
+    std::vector<std::pair<int,int>> plan;
+    int start_idx = get_key(x_size,start);
+    int goal_idx = get_key(x_size,goal);
+    int current_idx=start_idx;
+    while(current_idx!=goal_idx){
+        NodePtr _current_state_ptr=Astar_graph.get(current_idx);
+        current_idx=_current_state_ptr->parent_idx;
+        plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
+    }
+    NodePtr _current_state_ptr=Astar_graph.get(current_idx);
+    plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
 
-
+    
+    cout<<"got plan with length "<<plan.size()<<"\n";
 
 
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
