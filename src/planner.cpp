@@ -341,6 +341,7 @@ int main(int argc, char** argv)
             plan=plannerDstarLite(global_map,x_size,y_size,current_node,goal_node);
             current_node.x=plan[1].first;
             current_node.y=plan[1].second;
+            std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y);
         }
         break;
     case planner::ANYTIME_DSTAR:
