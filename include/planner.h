@@ -8,6 +8,7 @@
 #include <queue>
 #include <limits>
 #include <memory>
+#include <cmath>
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -37,8 +38,10 @@ struct Node
 
     Node(){}
 
-    void compute_h(){//TODO:update this
+    void compute_h(int gx, int gy){//TODO:update this
         this->h=0;
+        this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
+
     }
 
     Node operator=(const Node& incoming){
@@ -67,13 +70,20 @@ class Graph
         std::unordered_map<int, Node> nodeMap;
         int x_size;
         int y_size;
-        int start_idx;
+        int start_idx=-1;
+        int goal_x=-1;
+        int goal_y=-1;
     public:
         Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
             nodeMap.reserve(x_size*y_size);
         }
     
-        void set_start(int s){this->start_idx=s;}    
+        void set_start(int s){this->start_idx=s;}
+
+        void set_goal(int gx, int gy){
+            this->goal_x=gx;
+            this->goal_y=gy;
+        }    
     
         void addNode(Node& newNode){
             int idx=get_key(x_size,newNode.x,newNode.y);
@@ -100,7 +110,7 @@ class Graph
                 int new_x=idx%x_size; 
                 int new_y=idx/x_size; 
                 Node _newNode(new_x,new_y);
-                _newNode.compute_h();
+                _newNode.compute_h(goal_x,goal_y);
                 addNode(_newNode);
                 auto it=nodeMap.find(idx);
                 if (it==nodeMap.end()){

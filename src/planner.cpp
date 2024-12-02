@@ -4,7 +4,7 @@
 #include <string>
 #include <cctype>
 #include <queue>
-#include <cmath>
+#include <algorithm>
 
 #define NUMOFDIRS 8
 
@@ -175,15 +175,14 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     goal.g=0;
     int start_idx= get_key(x_size,start.x, start.y);
     int goal_idx= get_key(x_size,goal.x, goal.y);
-    goal.compute_h();
-    start.compute_h();
+    goal.compute_h(start.x,start.y);
+    start.compute_h(start.x,start.y);
     open_list.emplace(goal);
-    int dx[8]={0,1,0,-1,1,-1,-1,1};
-    int dy[8]={1,0,-1,0,1,-1,1,-1};
     Graph g(x_size,y_size);
     g.addNode(goal);
     g.addNode(start);
     g.set_start(start_idx);
+    g.set_goal(start.x,start.y);
     int num_expanded=0;
     bool expanded_start=false;
     //while f_start > min f in open
@@ -292,8 +291,8 @@ int main(int argc, char** argv)
 	    cout<<"please use an integer to select which planner\n";
 	return 0;
     }
-
-    if (std::isdigit(argv[3][0])){
+    std::string str_sensor_range=argv[3];
+    if (std::all_of(str_sensor_range.begin(), str_sensor_range.end(), ::isdigit )){
         sensing_range=std::stoi(argv[3]);
         if(0>sensing_range){
             cout<<"sensor range must be greater than 0\n";
@@ -306,23 +305,43 @@ int main(int argc, char** argv)
     }
 
     //make variables necessary to setup problem
-    int* map;
+    int* global_map;
+    int* robot_map;
     int x_size;
     int y_size;
     Node start_node;
     Node goal_node;
-    bool success=read_map(map_path,map,x_size,y_size,start_node,goal_node);
+    std::vector<std::pair<int,int>> plan;
+
+    bool success=read_map(map_path,global_map,x_size,y_size,start_node,goal_node);
     if (!success){
         cout<< "did not read map successfully, exiting planner\n";
         return 0;
     }
+
+    //make blank map for the robot
+    robot_map = new int[x_size*y_size];
+    for (int k=0; k<x_size; ++k){
+        for(int l=0;l<y_size; ++l){
+            int idx=get_key(x_size,k,l);
+            robot_map[idx]=0;
+        }
+    }
+    Node current_node(start_node.x,start_node.y);
+
+    std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y);
+
     switch (which)
     {
     case planner::ASTAR:
-        plannerAstar(map,x_size,y_size,start_node,goal_node);
+        plannerAstar(global_map,x_size,y_size,start_node,goal_node);
         break;
     case planner::DSTAR_LITE:
-        plannerDstarLite(map,x_size,y_size,start_node,goal_node);
+        while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
+            plan=plannerDstarLite(global_map,x_size,y_size,current_node,goal_node);
+            current_node.x=plan[1].first;
+            current_node.y=plan[1].second;
+        }
         break;
     case planner::ANYTIME_DSTAR:
         plannerAnytimeDstar();
