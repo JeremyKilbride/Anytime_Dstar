@@ -1,11 +1,13 @@
 #include "planner.h"
-#include<iostream>
+#include <iostream>
 #include <chrono>
 #include <string>
 #include <cctype>
 #include <queue>
 #include <cmath>
+
 #define NUMOFDIRS 8
+
 using std::cout;
 
 std::vector<Node> get_successors(NodePtr s, Graph& g){
@@ -114,7 +116,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
                     if(Astar_graph.get(xprime,yprime)==nullptr){
                         Node newNode(xprime,yprime);
                         newNode.h = computeHeuristic(newNode,goal);
-                        newNode.parent_idx = get_key(x,y);
+                        newNode.parent_idx = get_key(x_size,x,y);
                         Astar_graph.addNode(newNode);
                     }
 
@@ -123,7 +125,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
                     if(Astar_graph.get(xprime,yprime)->g > current->g+1){ //only update the gvalues for valid moves
                         
                         Astar_graph.get(xprime,yprime)->g = current->g+1;
-                        open.push(std::make_shared<Node>(Astar_graph.get(xprime,yprime)));
+                        open.push(Astar_graph.get(xprime,yprime));
 
                         
                                 
@@ -224,7 +226,6 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             //add state to closed_list after expansion
             closed_list.emplace(state_idx,*state_ptr); 
         }
-        //}
         //state is under consistent
         else{
             state_ptr->v=std::numeric_limits<double>::max();
@@ -239,7 +240,6 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         }
     }
 
-    //TODO:implement backtracking
     int current_idx=start_idx;
     while(current_idx!=goal_idx){
         NodePtr _current_state_ptr=g.get(current_idx);
@@ -276,20 +276,33 @@ enum planner{
 
 int main(int argc, char** argv)
 {
-    if (argc!=3){
+    if (argc!=4){
         cout<<"invalid number of arguments\n";
-        cout<<"usage: ./planner [mapfile] [whichPlanner]\n";
+        cout<<"usage: ./planner [mapfile] [whichPlanner] [sensorRange]\n";
         return 0;
     }
-    std::string map_path=argv[1];
+    std::string map_path=argv[1];    
     cout<<"got map file "<<map_path<<"\n";
     int which=-1;
+    int sensing_range=0;
     if (std::isdigit(argv[2][0])){
-	which=std::stoi(argv[2]);
+	    which=std::stoi(argv[2]);
     }
     else{
-	cout<<"please use an integer to select which planner\n";
+	    cout<<"please use an integer to select which planner\n";
 	return 0;
+    }
+
+    if (std::isdigit(argv[3][0])){
+        sensing_range=std::stoi(argv[3]);
+        if(0>sensing_range){
+            cout<<"sensor range must be greater than 0\n";
+            return 0;
+        }
+    }
+    else{
+        cout<<"please use an integer to select the sensor range\n";
+        return 0;
     }
 
     //make variables necessary to setup problem

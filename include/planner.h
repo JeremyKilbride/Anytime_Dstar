@@ -20,14 +20,7 @@ using std::cout;
 
 int get_key(int x_size, int x, int y){ //IF MAPS ARE 0 indexed
     return y*x_size + x;
-};
-
-int get_key(int x_size, Node current){ //IF MAPS ARE 0 indexed
-    return current.y*x_size + current.x;
-};
-int get_key(int x_size, std::shared_ptr<Node> current){
-    return current->y*x_size + current->x;
-};
+}
 
 struct Node
 {
@@ -57,6 +50,13 @@ struct Node
         this->parent_idx=incoming.parent_idx;
         return *this;
     }
+};
+
+int get_key(int x_size, Node current){ //IF MAPS ARE 0 indexed
+    return current.y*x_size + current.x;
+};
+int get_key(int x_size, std::shared_ptr<Node> current){
+    return current->y*x_size + current->x;
 };
 
 using NodePtr=std::shared_ptr<Node>;
@@ -168,9 +168,9 @@ std::unordered_set<int> update_map(int*& current,int* global, int x_size, int y_
         for(int j=0; j<y_size;j++){
             if(i>robotposeX-SENSOR_REACH && i<robotposeX+SENSOR_REACH){
                 if(j>robotposeY-SENSOR_REACH && j<robotposeY+SENSOR_REACH){
-                    if(current[get_key(i,j)] != global[get_key(i,j)]){
-                        current[get_key(i,j)] = global[get_key(i,j)];
-                        cell_changes.insert(get_key(i,j));
+                    if(current[get_key(x_size,i,j)] != global[get_key(x_size,i,j)]){
+                        current[get_key(x_size,i,j)] = global[get_key(x_size,i,j)];
+                        cell_changes.insert(get_key(x_size,i,j));
                     }
                     
                 }
