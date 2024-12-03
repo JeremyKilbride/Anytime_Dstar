@@ -239,11 +239,11 @@
 				},
 				{
 					"name" : "HELPSTRING",
-					"value" : "Flags used by the CXX compiler during all build types."
+					"value" : ""
 				}
 			],
 			"type" : "STRING",
-			"value" : ""
+			"value" : " -fsanitize=address -fno-omit-frame-pointer"
 		},
 		{
 			"name" : "CMAKE_CXX_FLAGS_DEBUG",

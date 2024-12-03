@@ -31,6 +31,7 @@ struct Node
     double h=std::numeric_limits<double>::max();
     double v=std::numeric_limits<double>::max();
     int parent_idx=-1;
+    
 
     Node(int x, int y): x(x), y(y){}
 
@@ -43,7 +44,7 @@ struct Node
         this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
 
     }
-
+  
     Node operator=(const Node& incoming){
         this->x=incoming.x;
         this->y=incoming.y;

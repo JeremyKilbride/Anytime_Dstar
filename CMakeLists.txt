@@ -10,6 +10,8 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "-g")
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer" CACHE STRING "" FORCE)
+
 include_directories(include)
 
 # Add the main executable.

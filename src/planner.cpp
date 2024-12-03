@@ -65,6 +65,15 @@ double computeHeuristic(Node current, Node goal_node){
     return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
 };
 
+//compare node structure for the priority queue
+struct CompareNode {
+    bool operator()(std::shared_ptr<Node> a, std::shared_ptr<Node> b) {
+        // Return true if 'a' should come after 'b', i.e., a min-heap
+        return a->g + a->h > b->g+ b->h;  // For min-heap: smaller elements have higher priority
+    }
+};
+
+
 
 void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
 {
@@ -72,24 +81,30 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using A* planner\n";
-    std::cout << "\n"<< "x_size: " << x_size << "\n";
-    std::cout << "\n"<< "y_size: " << y_size << "\n";
-    std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
-    std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
-    std::cout << "\n"<< "first map entry " << map[0] << "\n";
-    int closed[x_size*y_size] = {};
+    // std::cout << "\n"<< "x_size: " << x_size << "\n";
+    // std::cout << "\n"<< "y_size: " << y_size << "\n";
+    // std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
+    // std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
+    // std::cout << "\n"<< "first map entry " << map[0] << "\n";
+    int* closed = new int[x_size*y_size]();
     Graph Astar_graph(x_size,y_size);
-    std::priority_queue<std::shared_ptr<Node>,std::vector<std::shared_ptr<Node>>> open;
-    open.push(std::make_shared<Node>(start));
+    std::priority_queue<std::shared_ptr<Node>,std::vector<std::shared_ptr<Node>>,CompareNode> open;
     Astar_graph.addNode(start);
     Astar_graph.addNode(goal);
     start.h = computeHeuristic(start,goal);
     start.g =0;
     goal.h = 0;
 
-    while(!closed[get_key(x_size,goal)] && !open.empty()){ 
-            
+    open.push(std::make_shared<Node>(start));
+
+    while(!open.empty()){ 
+        std::cout<<"\n"<<"open size: "<<(open.size())<<"\n";
+
         std::shared_ptr<Node> current = open.top();
+        if(get_key(x_size,current)==get_key(x_size,goal)){
+            
+            break;
+        }
         int s = get_key(x_size,current);
         
         if(!open.empty()){
@@ -111,20 +126,27 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
                 int xprime = x + dX[dir];
                 int yprime = y + dY[dir];
                 int primeIndex = get_key(x_size,xprime,yprime);
-                if (xprime >= 0 && xprime <= x_size && yprime >= 0 && yprime <= y_size  && map[primeIndex]<1 && !closed[primeIndex]){  //if the next direction is in the map, below the collision threshold and not closed
+                if (xprime >= 0 && xprime < x_size && yprime >= 0 && yprime < y_size  && map[primeIndex]<1 && !closed[primeIndex]){  //if the next direction is in the map, below the collision threshold and not closed
                     
                     if(Astar_graph.get(xprime,yprime)==nullptr){
+                        
                         Node newNode(xprime,yprime);
                         newNode.h = computeHeuristic(newNode,goal);
                         newNode.parent_idx = get_key(x_size,x,y);
                         Astar_graph.addNode(newNode);
+                        
                     }
 
-                    
+                    // std::cout<<"current g: "<< current->g<<"\n";
                     //if the g(s) is greater than g(sprime)
                     if(Astar_graph.get(xprime,yprime)->g > current->g+1){ //only update the gvalues for valid moves
-                        
-                        Astar_graph.get(xprime,yprime)->g = current->g+1;
+                        Node newNode(xprime,yprime);
+                        newNode.h = computeHeuristic(newNode,goal);
+                        newNode.g = current->g+1;
+                        // std::cout<<"newNode g: "<< newNode.g<<"\n";
+                        newNode.parent_idx = get_key(x_size,x,y);
+                        Astar_graph.set(newNode);
+                        // std::cout<<"newNode g in map: "<< Astar_graph.get(xprime,yprime)->g<<"\n";
                         open.push(Astar_graph.get(xprime,yprime));
 
                         
@@ -142,8 +164,8 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     std::vector<std::pair<int,int>> plan;
     int start_idx = get_key(x_size,start);
     int goal_idx = get_key(x_size,goal);
-    int current_idx=start_idx;
-    while(current_idx!=goal_idx){
+    int current_idx=goal_idx;
+    while(current_idx!=start_idx){
         NodePtr _current_state_ptr=Astar_graph.get(current_idx);
         current_idx=_current_state_ptr->parent_idx;
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
@@ -154,7 +176,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     
     cout<<"got plan with length "<<plan.size()<<"\n";
 
-
+    delete[] closed;
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
