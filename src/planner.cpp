@@ -1,4 +1,5 @@
 #include "planner.h"
+#include "planner_best_anytime.h"
 #include <iostream>
 #include <chrono>
 #include <string>
@@ -338,7 +339,7 @@ int main(int argc, char** argv)
         break;
     case planner::DSTAR_LITE:
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
-            plan=plannerDstarLite(global_map,x_size,y_size,current_node,goal_node);
+            plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node);
             current_node.x=plan[1].first;
             current_node.y=plan[1].second;
             std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y);

@@ -14,7 +14,7 @@ include_directories(include)
 
 # Add the main executable.
 add_executable(planner
-        src/planner.cpp)
+        src/planner.cpp src/planner_best_anytime.cpp)
 
 # Define the absolute path to relevant directories.
 target_compile_definitions(planner PRIVATE MAPS_DIR="${CMAKE_SOURCE_DIR}/maps")
