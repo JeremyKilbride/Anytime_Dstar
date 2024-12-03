@@ -399,13 +399,14 @@ int main(int argc, char** argv)
     switch (which)
     {
     case planner::ASTAR:
+        // cout<<"sensing rang"<<sensing_range;
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){
             plan=plannerAstar(robot_map,x_size,y_size,current_node,goal_node);
             changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
             output(plan);
             current_node.x=plan[1].first;
             current_node.y=plan[1].second;
-            std::cout<<"x: "<<current_node.x<<" y: "<<current_node.y<<"\n";
+            // std::cout<<"x: "<<current_node.x<<" y: "<<current_node.y<<"\n";
         }
         break;
     case planner::DSTAR_LITE:

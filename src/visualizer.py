@@ -58,16 +58,17 @@ def parse_robot_trajectory_file(filename):
             else:
                 robot_trajectory.append([])  # Start a new trajectory
                 trajnum += 1
-    print(len(robot_trajectory))
+    
     return robot_trajectory
 
 SPEEDUP = 5000
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python visualizer.py <map filename>")
+    if len(sys.argv) != 4:
+        print("Usage: python visualizer.py <map filename> [sensorRange] [SpeedUp]")
         sys.exit(1)
-    
+    sensor_range=int(sys.argv[2])
+    SpeedUp = int(sys.argv[3])
     x_size, y_size, collision_threshold, robotX, robotY, target_trajectory, costmap, robotmap = parse_mapfile(sys.argv[1])
 
     robot_trajectory = parse_robot_trajectory_file('../output/robot_trajectory.txt')
@@ -84,33 +85,11 @@ if __name__ == "__main__":
         line2.set_data([], [])
         return line1, line2
     
-    # def update(frame):
-    #     for i in range(x_size):
-    #         for j in range(y_size):
-    #             if(i>robotX-10 and i<robotX+10):
-    #                 if(j>robotY-10 and j<robotY+10):
-    #                     if(costmap[j][i] != robotmap[j][i]):
-    #                         robotmap[j][i] = costmap[j][i]
-    #     ax.imshow(robotmap)
-        
-    #     line1.set_data([p['x'] for p in robot_trajectory[frame] if 'x' in p], [p['y'] for p in robot_trajectory[frame] if 'y' in p])
-        
-    #     # t = robot_trajectory[frame+1]['t']
-    #     # line2.set_data([p['x'] for p in target_trajectory[0]], [p['y'] for p in target_trajectory[0]])
-    #     line2.set_data([p['x'] for p in target_trajectory[:frame+1]], [p['y'] for p in target_trajectory[:frame+1]])
-    #     #plt.pause((robot_trajectory[frame+1]['t']-robot_trajectory[frame]['t'])/SPEEDUP)
-        
-    #     return line1, line2
+
     def update(frame):
-        frame = frame*5
+        frame = frame*SpeedUp
         robot_path = robot_trajectory[frame]  # This is the list of points for this trajectory
-        # print("x_size"+ str(x_size))
-        # print("y_size"+ str(y_size))
-        # print("costmap")
-        # print(costmap.shape)
-        # print("robotmap")
-        # print(robotmap.shape)
-        # print(len(costmap[0]))
+
         if(len(robot_path)!=0):
             first_robot_position = robot_path[0]  # First dictionary in the list
             robotX = first_robot_position['x']
@@ -119,8 +98,8 @@ if __name__ == "__main__":
                 # print("i: "+str(i))
                 for j in range(y_size):
                     # print("j: "+str(j))
-                    if (i > robotX - 200 and i < robotX + 200):
-                        if (j > robotY - 200 and j < robotY + 200):
+                    if (i > robotX - sensor_range and i < robotX + sensor_range):
+                        if (j > robotY - sensor_range and j < robotY + sensor_range):
                             if (costmap[j][i] != robotmap[j][i]):
                                 robotmap[j][i] = costmap[j][i]*10
 
@@ -136,7 +115,7 @@ if __name__ == "__main__":
 
         return line1, line2
     
-    ani = FuncAnimation(fig, update, frames=int(len(robot_trajectory)/5)-1, init_func=init, blit=False, interval=1)
+    ani = FuncAnimation(fig, update, frames=int(len(robot_trajectory)/SpeedUp)-1, init_func=init, blit=False, interval=1)
     ani.save(filename = "Animation.mp4")
     print("UHHH done")
     plt.legend()
