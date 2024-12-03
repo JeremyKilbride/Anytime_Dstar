@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/wassmann/code/Anytime_Dstar/build",
-  "command": "/usr/bin/g++ -DMAPS_DIR=\\\"/home/wassmann/code/Anytime_Dstar/maps\\\" -DOUTPUT_DIR=\\\"/home/wassmann/code/Anytime_Dstar/output\\\" -I/home/wassmann/code/Anytime_Dstar/include -g -std=gnu++14 -o CMakeFiles/planner.dir/src/planner.cpp.o -c /home/wassmann/code/Anytime_Dstar/src/planner.cpp",
-  "file": "/home/wassmann/code/Anytime_Dstar/src/planner.cpp"
-}
-]
