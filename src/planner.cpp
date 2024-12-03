@@ -21,9 +21,12 @@ std::vector<Node> get_successors(NodePtr s, Graph& g){
         int successor_x=s->x+dx[i];
         int successor_y=s->y+dy[i];
         int idx=get_key(g._x_size(),successor_x,successor_y);
-        if(0<successor_x && successor_x<g._x_size() && 0<successor_y && successor_y<g._y_size()){
+        if(0<=successor_x && successor_x<g._x_size() && 0<=successor_y && successor_y<g._y_size()){
             NodePtr successor_ptr=g.getAddNode(idx);
             successor_ptr->parent_idx=s_idx;
+            //Wassmann code
+            g.set(*successor_ptr);
+            //Wassmann code
             successors.emplace_back(*successor_ptr);
         }
     }
@@ -241,15 +244,30 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     int num_expanded=0;
     bool expanded_start=false;
     //while f_start > min f in open
-   while(*g.get(start_idx)>open_list.top() /*|| g.get(start_idx)->v!=g.get(start_idx)->g)*/  && !open_list.empty()){
+    cout<<"open list size: "<<open_list.size()<<"\n";
+    //Wassmann code below
+   while(/*g.get(start_idx)->v + g.get(start_idx)->h >open_list.top().g + open_list.top().h*/ *g.get(start_idx)>open_list.top() /*|| g.get(start_idx)->v!=g.get(start_idx)->g)*/  && !open_list.empty()){
         //get top item from open 
         Node state=open_list.top();
         open_list.pop();
         std::shared_ptr<Node> state_ptr=g.get(state);
         // update_node(g,*state_ptr,x_size,y_size,map,open_list);
         //state is consistent or overconsistent
+        // std::cout<<"State pointer v: "<<state_ptr->v<<"\n";
+        // std::cout<<"State pointer g: "<<state_ptr->g<<"\n";
         if (state_ptr->v >= state_ptr->g){
+            //wassmann code
+            // Node newNode(state_ptr->x,state_ptr->y);
+            // newNode.g = state_ptr->g;
+            // newNode.h = state_ptr->h;
+            // newNode.v = state_ptr->g;
+            // newNode.parent_idx = state_ptr->parent_idx;
+            // g.set(newNode);
+            // state_ptr = g.get(state_ptr->x,state_ptr->y);
             state_ptr->v = state_ptr->g;
+            g.set(*state_ptr);
+            //Wassmann Code
+            
             //expand state if not already expanded
             ++num_expanded;
             int state_idx=get_key(x_size,state_ptr->x,state_ptr->y);             
@@ -302,6 +320,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         current_idx=get_best_neighbor_idx(g,*_current_state_ptr,map,x_size,y_size);
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
         // cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
+        // cout<<"with g:"<<_current_state_ptr->g<<"\n";
+        // cout<<"and h value: "<<_current_state_ptr->h<<"\n";
+        // cout<<"and v value: "<<_current_state_ptr->v<<"\n";
+        // cout<<"and map value: "<< map[get_key(x_size,_current_state_ptr->x,_current_state_ptr->y)]<<"\n";
         // if (_c>300){
         //     break;
         // }
@@ -449,7 +471,7 @@ int main(int argc, char** argv)
                 if (incons.find(change_idx)!=incons.end()){
                     incons[change_idx]=*ptr_changed;
                 }else{
-                _open.emplace(*ptr_changed);
+                    _open.emplace(*ptr_changed);
                 }
                 std::unordered_set<int>successor_idxs=get_successor_idxs(*ptr_changed,x_size,y_size);
                 for(int idx: successor_idxs){
