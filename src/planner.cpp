@@ -5,6 +5,10 @@
 #include <cctype>
 #include <queue>
 #include <algorithm>
+#include <filesystem>
+#ifndef OUTPUT_DIR
+#define OUTPUT_DIR "output"
+#endif
 
 #define NUMOFDIRS 8
 
@@ -75,7 +79,7 @@ struct CompareNode {
 
 
 
-void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
+std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
 {
     int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
@@ -94,7 +98,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     open.push(std::make_shared<Node>(start));
 
     while(!open.empty()){ 
-        std::cout<<"\n"<<"open size: "<<(open.size())<<"\n";
+        // std::cout<<"\n"<<"open size: "<<(open.size())<<"\n";
 
         std::shared_ptr<Node> current = open.top();
         if(get_key(x_size,current)==get_key(x_size,goal)){
@@ -164,10 +168,10 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     while(current_idx!=start_idx){
         NodePtr _current_state_ptr=Astar_graph.get(current_idx);
         current_idx=_current_state_ptr->parent_idx;
-        plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
+        plan.insert(plan.begin(),std::make_pair(_current_state_ptr->x,_current_state_ptr->y));
     }
     NodePtr _current_state_ptr=Astar_graph.get(current_idx);
-    plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
+    plan.insert(plan.begin(),std::make_pair(_current_state_ptr->x,_current_state_ptr->y));
 
     
     cout<<"got plan with length "<<plan.size()<<"\n";
@@ -176,6 +180,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+    return plan;
 }
 
 std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal)
@@ -291,6 +296,31 @@ enum planner{
     ANYTIME_DSTAR
 };
 
+
+
+void output(const std::vector<std::pair<int, int>>& plan) {
+    std::string outputDir = OUTPUT_DIR;
+    std::string outputFilePath = outputDir + "/robot_trajectory.txt";
+
+    // Open file in append mode
+    std::ofstream output_file(outputFilePath, std::ios::app);
+    if (!output_file.is_open()) {
+        std::cerr << "Failed to open the file: " << outputFilePath << std::endl;
+        return;
+    }
+
+    // Append trajectory points to the file
+    for (const auto& point : plan) {
+        output_file << point.first << "," << point.second << "\n";
+    }
+
+    // Append a marker to indicate the end of this trajectory
+    output_file << -1 << "," << -1 << "\n";
+
+    output_file.close();
+    std::cout << "Trajectory appended to " << outputFilePath << std::endl;
+}
+
 int main(int argc, char** argv)
 {
     if (argc!=4){
@@ -321,6 +351,23 @@ int main(int argc, char** argv)
         cout<<"please use an integer to select the sensor range\n";
         return 0;
     }
+    
+
+
+    std::string outputDir = OUTPUT_DIR;
+    std::string outputFilePath = outputDir + "/robot_trajectory.txt";
+    std::ofstream output_file(outputFilePath);
+    if (!output_file.is_open()) {
+        std::cerr << "Failed to open the file: " << outputFilePath << std::endl;
+    
+    }else{
+        output_file << -1 << "," << -1 << "\n";
+        output_file.close();
+
+    }
+
+
+
 
     //make variables necessary to setup problem
     int* global_map;
@@ -347,16 +394,24 @@ int main(int argc, char** argv)
     }
     Node current_node(start_node.x,start_node.y);
 
-    std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y);
+    std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
 
     switch (which)
     {
     case planner::ASTAR:
-        plannerAstar(global_map,x_size,y_size,start_node,goal_node);
+        while (current_node.x != goal_node.x || current_node.y != goal_node.y){
+            plan=plannerAstar(robot_map,x_size,y_size,current_node,goal_node);
+            changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
+            output(plan);
+            current_node.x=plan[1].first;
+            current_node.y=plan[1].second;
+            std::cout<<"x: "<<current_node.x<<" y: "<<current_node.y<<"\n";
+        }
         break;
     case planner::DSTAR_LITE:
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
             plan=plannerDstarLite(global_map,x_size,y_size,current_node,goal_node);
+            output(plan);
             current_node.x=plan[1].first;
             current_node.y=plan[1].second;
         }

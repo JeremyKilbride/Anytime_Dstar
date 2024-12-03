@@ -6,5 +6,5 @@ CXX_DEFINES = -DMAPS_DIR=\"/home/wassmann/code/Anytime_Dstar/maps\" -DOUTPUT_DIR
 
 CXX_INCLUDES = -I/home/wassmann/code/Anytime_Dstar/include
 
-CXX_FLAGS =  -fsanitize=address -fno-omit-frame-pointer -g -std=gnu++14
+CXX_FLAGS =  -fsanitize=address -fno-omit-frame-pointer -fsanitize=address -fno-omit-frame-pointer -g -std=gnu++14
 
