@@ -81,11 +81,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using A* planner\n";
-    // std::cout << "\n"<< "x_size: " << x_size << "\n";
-    // std::cout << "\n"<< "y_size: " << y_size << "\n";
-    // std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
-    // std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
-    // std::cout << "\n"<< "first map entry " << map[0] << "\n";
+
     int* closed = new int[x_size*y_size]();
     Graph Astar_graph(x_size,y_size);
     std::priority_queue<std::shared_ptr<Node>,std::vector<std::shared_ptr<Node>>,CompareNode> open;
