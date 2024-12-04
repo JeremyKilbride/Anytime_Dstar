@@ -37,7 +37,7 @@ void update_node(Graph& g,
                  int y_size, 
                  int* map, 
                  std::priority_queue<Node,std::vector<Node>,std::greater<Node>>& open){
-    double best_rhs=std::numeric_limits<double>::max();
+    double best_g=std::numeric_limits<double>::max();
     int best_parent=-1;
     std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g);
     //loop over all successors 
@@ -51,27 +51,22 @@ void update_node(Graph& g,
         else{
             cost=std::numeric_limits<double>::max();
         }
-        double rhs=successor.g+cost;
-        if(rhs<best_rhs){
-            best_rhs=rhs;
+        double g=successor.v+cost;
+        if(g<best_g){
+            best_g=g;
             best_parent=idx;
         }
     }
-    s.rhs=best_rhs;
+    s.g=best_g;
     s.parent_idx=best_parent;
     g.set(s);
-    if(s.g!=s.rhs){
-        open.emplace(s);
-    }
 }
 
 
 bool operator> (const Node& lhs,const Node& rhs)
 {
-    double lhs_min=std::min(lhs.g,lhs.rhs);
-    double rhs_min=std::min(rhs.g,rhs.rhs);
-    double lhs_f = lhs_min + lhs.h;
-    double rhs_f = rhs_min + rhs.h;
+    double lhs_f = lhs.g + lhs.h;
+    double rhs_f = rhs.g + rhs.h;
     return lhs_f > rhs_f;
 }
 
@@ -227,7 +222,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     int goal_idx= get_key(x_size,goal.x, goal.y);
     start.compute_h(start.x,start.y);
     if (first_time){
-        goal.rhs=0;
+        goal.g=0;
         goal.compute_h(start.x,start.y);
         open_list.emplace(goal);
         g.addNode(goal);
@@ -246,54 +241,52 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     int num_expanded=0;
     bool expanded_start=false;
     //while f_start > min f in open
-   while((*g.get(start_idx)>open_list.top() || g.get(start_idx)->rhs!=g.get(start_idx)->g)  && !open_list.empty()){
+   while(*g.get(start_idx)>open_list.top() /*|| g.get(start_idx)->v!=g.get(start_idx)->g)*/  && !open_list.empty()){
         //get top item from open 
         Node state=open_list.top();
         open_list.pop();
         std::shared_ptr<Node> state_ptr=g.get(state);
         // update_node(g,*state_ptr,x_size,y_size,map,open_list);
         //state is consistent or overconsistent
-        if (state_ptr->g >= state_ptr->rhs){
-            state_ptr->g = state_ptr->rhs;
-            g.set(*state_ptr);
+        if (state_ptr->v >= state_ptr->g){
+            state_ptr->v = state_ptr->g;
             //expand state if not already expanded
             ++num_expanded;
             int state_idx=get_key(x_size,state_ptr->x,state_ptr->y);             
             std::vector<Node> successors=get_successors(state_ptr,g);
             for(Node successor: successors){
-                int idx=get_key(x_size,successor.x,successor.y);
-                update_node(g,successor,x_size,y_size,map,open_list); 
-                // int map_val=map[idx];
-                // double cost;
-                // if (map_val==0){
-                //     cost=1;
-                // }      
-                // else{
-                //     cost=std::numeric_limits<double>::max();
-                // }
-                // if(successor.g > state_ptr->g + cost){
-                //     successor.g = state_ptr->g + cost;
-                //     g.set(successor);
-                //     //if g value lowered and successor not in closed insert into open 
-                //     if (closed_list.find(idx)==closed_list.end()){
-                //         open_list.emplace(successor);
-                //     }
-                //     //else if g lowered and in closed insert into incons
-                //     else{
-                //         inconsistent_list.emplace(idx,successor);
-                //     }
-                // }
+                int idx=get_key(x_size,successor.x,successor.y);    
+                int map_val=map[idx];
+                double cost;
+                if (map_val==0){
+                    cost=1;
+                }      
+                else{
+                    cost=std::numeric_limits<double>::max();
+                }
+                if(successor.g > state_ptr->g + cost){
+                    successor.g = state_ptr->g + cost;
+                    g.set(successor);
+                    //if g value lowered and successor not in closed insert into open 
+                    if (closed_list.find(idx)==closed_list.end()){
+                        open_list.emplace(successor);
+                    }
+                    //else if g lowered and in closed insert into incons
+                    else{
+                        inconsistent_list.emplace(idx,successor);
+                    }
+                }
             }
             //add state to closed_list after expansion
             closed_list.emplace(state_idx,*state_ptr); 
         }
         //state is under consistent
         else{
-            cout<<"found underconsistent state \n";
-            state_ptr->g=std::numeric_limits<double>::max();
+            cout<<"found underconsistent state";
+            state_ptr->v=std::numeric_limits<double>::max();
             //update state and all successors
             update_node(g,*state_ptr,x_size,y_size,map,open_list);
-            // open_list.emplace(*state_ptr);
+            open_list.emplace(*state_ptr);
             std::vector<Node> successors=get_successors(state_ptr,g);
             for (Node successor: successors){
                 update_node(g,successor,x_size,y_size,map,open_list);
@@ -308,10 +301,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         NodePtr _current_state_ptr=g.get(current_idx);
         current_idx=get_best_neighbor_idx(g,*_current_state_ptr,map,x_size,y_size);
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
-        // cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
-        // if (_c>300){
-        //     break;
-        // }
+        cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
+        if (_c>300){
+            break;
+        }
         ++_c;
     }
     NodePtr _current_state_ptr=g.get(current_idx);
@@ -442,86 +435,86 @@ int main(int argc, char** argv)
             }
             int current_idx=get_key(x_size,current_node.x,current_node.y);
             std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
-            //propgate changes after map update
+            //propgate changes
             std::unordered_set<int> further_changes;
             bool start_updated=false;
             //update changed nodes and their successors first
             for(int change_idx: changes){
                 NodePtr ptr_changed=graph.getAddNode(change_idx);
                 update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open);
-                // if(ptr_changed->v<ptr_changed->g){
-                //     ptr_changed->v=std::numeric_limits<double>::max();
-                //     graph.set(*ptr_changed);
-                // }
-                // if (incons.find(change_idx)!=incons.end()){
-                //     incons[change_idx]=*ptr_changed;
-                // }else{
-                // _open.emplace(*ptr_changed);
-                // }
+                if(ptr_changed->v<ptr_changed->g){
+                    ptr_changed->v=std::numeric_limits<double>::max();
+                    graph.set(*ptr_changed);
+                }
+                if (incons.find(change_idx)!=incons.end()){
+                    incons[change_idx]=*ptr_changed;
+                }else{
+                _open.emplace(*ptr_changed);
+                }
                 std::unordered_set<int>successor_idxs=get_successor_idxs(*ptr_changed,x_size,y_size);
                 for(int idx: successor_idxs){
                     Node successor=*graph.getAddNode(idx);
                     update_node(graph,successor,x_size,y_size,robot_map,_open);
-                    // std::unordered_set<int> next_successor_idxs=get_successor_idxs(successor,x_size,y_size);
-                    // merge_sets(further_changes,next_successor_idxs,current_node.x,current_node.y,sensing_range,x_size);
-                    // if(successor.v < successor.g ){
-                    //     successor.v=std::numeric_limits<double>::max();
-                    //     graph.set(successor);
-                    // }
-                    // if (incons.find(change_idx)!=incons.end()){
-                    //     incons[change_idx]=successor;
-                    // }else{
-                    //     _open.emplace(successor);
-                    // }
+                    std::unordered_set<int> next_successor_idxs=get_successor_idxs(successor,x_size,y_size);
+                    merge_sets(further_changes,next_successor_idxs,current_node.x,current_node.y,sensing_range,x_size);
+                    if(successor.v < successor.g ){
+                        successor.v=std::numeric_limits<double>::max();
+                        graph.set(successor);
+                    }
+                    if (incons.find(change_idx)!=incons.end()){
+                        incons[change_idx]=successor;
+                    }else{
+                        _open.emplace(successor);
+                    }
                 }
             }
-            // std::unordered_set<int> updated;
-            // //continue propagating changes until we reach the robot start position   
-            // if (!further_changes.empty()){
-            //     int c=0;
-            //     while(!start_updated){
-            //         int next_idx=*further_changes.begin();
-            //         further_changes.erase(further_changes.begin());
-            //         NodePtr ptr_next=graph.getAddNode(next_idx);
-            //         if (updated.find(next_idx)==updated.end()){
-            //             update_node(graph, *ptr_next,x_size, y_size,robot_map,_open);
-            //             std::unordered_set<int> next_successor_idxs=get_successor_idxs(*ptr_next,x_size,y_size);
-            //             merge_sets(further_changes,next_successor_idxs,current_node.x,current_node.y,sensing_range,x_size);
-            //             if(ptr_next->v < ptr_next->g){
-            //                 ptr_next->v=std::numeric_limits<double>::max();
-            //                 graph.set(*ptr_next);
-            //             }
-            //             if (incons.find(next_idx)!=incons.end()){
-            //                 incons[next_idx]=*ptr_next;
-            //             }else{
-            //                 _open.emplace(*ptr_next);
-            //             }
-            //             if(next_idx==current_idx){
-            //                 start_updated=true;
-            //             }
-            //             updated.insert(next_idx);
-            //         }
-            //     }
-            //     //get current robot state from graph and update successors
-            //     NodePtr ptr_start=graph.get(current_idx);
-            //     std::unordered_set<int> start_successor_idxs=get_successor_idxs(*ptr_start,x_size,y_size);
-            //     for(int idx: start_successor_idxs){
-            //         Node successor=*graph.getAddNode(idx);
-            //         if (updated.find(idx)==updated.end()){
-            //             update_node(graph,successor,x_size,y_size,robot_map,_open);
-            //             if(successor.v < successor.g ){
-            //                 successor.v=std::numeric_limits<double>::max();
-            //                 graph.set(successor);
-            //             }
-            //             if (incons.find(idx)!=incons.end()){
-            //                 incons[idx]=successor;
-            //             }else{
-            //                 _open.emplace(successor);
-            //             }
-            //             updated.insert(idx);
-            //         }
-            //     }
-            // }
+            std::unordered_set<int> updated;
+            //continue propagating changes until we reach the robot start position   
+            if (!further_changes.empty()){
+                int c=0;
+                while(!start_updated){
+                    int next_idx=*further_changes.begin();
+                    further_changes.erase(further_changes.begin());
+                    NodePtr ptr_next=graph.getAddNode(next_idx);
+                    if (updated.find(next_idx)==updated.end()){
+                        update_node(graph, *ptr_next,x_size, y_size,robot_map,_open);
+                        std::unordered_set<int> next_successor_idxs=get_successor_idxs(*ptr_next,x_size,y_size);
+                        merge_sets(further_changes,next_successor_idxs,current_node.x,current_node.y,sensing_range,x_size);
+                        if(ptr_next->v < ptr_next->g){
+                            ptr_next->v=std::numeric_limits<double>::max();
+                            graph.set(*ptr_next);
+                        }
+                        if (incons.find(next_idx)!=incons.end()){
+                            incons[next_idx]=*ptr_next;
+                        }else{
+                            _open.emplace(*ptr_next);
+                        }
+                        if(next_idx==current_idx){
+                            start_updated=true;
+                        }
+                        updated.insert(next_idx);
+                    }
+                }
+                //get current robot state from graph and update successors
+                NodePtr ptr_start=graph.get(current_idx);
+                std::unordered_set<int> start_successor_idxs=get_successor_idxs(*ptr_start,x_size,y_size);
+                for(int idx: start_successor_idxs){
+                    Node successor=*graph.getAddNode(idx);
+                    if (updated.find(idx)==updated.end()){
+                        update_node(graph,successor,x_size,y_size,robot_map,_open);
+                        if(successor.v < successor.g ){
+                            successor.v=std::numeric_limits<double>::max();
+                            graph.set(successor);
+                        }
+                        if (incons.find(idx)!=incons.end()){
+                            incons[idx]=successor;
+                        }else{
+                            _open.emplace(successor);
+                        }
+                        updated.insert(idx);
+                    }
+                }
+            }
             
 
         }

@@ -30,8 +30,6 @@ struct Node
     double g=std::numeric_limits<double>::max();
     double h=std::numeric_limits<double>::max();
     double v=std::numeric_limits<double>::max();
-    double rhs=std::numeric_limits<double>::max();
-
     int parent_idx=-1;
 
     Node(int x, int y): x(x), y(y){}
@@ -52,7 +50,6 @@ struct Node
         this->g=incoming.g;
         this->h=incoming.h;
         this->v=incoming.v;
-        this->rhs=incoming.rhs;
         this->parent_idx=incoming.parent_idx;
         return *this;
     }
@@ -107,9 +104,7 @@ class Graph
         std::shared_ptr<Node> getAddNode(int idx){
             auto it=nodeMap.find(idx);
             if (it!=nodeMap.end()){
-                Node ret=it->second;
-                ret.compute_h(goal_x,goal_y);
-                return std::make_shared<Node>(ret);
+                return std::make_shared<Node>(it->second);
             }
             else{
                 int new_x=idx%x_size; 
