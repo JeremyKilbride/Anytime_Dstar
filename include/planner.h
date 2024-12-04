@@ -137,7 +137,9 @@ class Graph
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
-                return std::make_shared<Node>(it->second);
+                Node ret=it->second;
+                ret.compute_h(goal_x,goal_y);
+                return std::make_shared<Node>(ret);
             }
         }
         std::shared_ptr<Node> get(int x, int y){
@@ -145,10 +147,22 @@ class Graph
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
-                return std::make_shared<Node>(it->second);
+                Node ret=it->second;
+                ret.compute_h(goal_x,goal_y);
+                return std::make_shared<Node>(ret);
             }
         }
 
+        NodePtr get(int idx){
+            auto it = nodeMap.find(idx);
+            if (it==nodeMap.end()){
+                return nullptr;
+            }else{
+                Node ret=it->second;
+                ret.compute_h(goal_x,goal_y);
+                return std::make_shared<Node>(ret);
+            }
+        }
 
         void print()
         {
@@ -157,27 +171,18 @@ class Graph
             }
         }
 
-        std::shared_ptr<Node> get(int idx){
-            auto it = nodeMap.find(idx);
-            if(it==nodeMap.end()){
-                return nullptr;
-            }
-            else
-                return std::make_shared<Node>(it->second);
-        }
-
 };
 
 
 
 
-std::unordered_set<int> update_map(int*& current,int* global, int x_size, int y_size, int robotposeX, int robotposeY){
+std::unordered_set<int> update_map(int*& current,int* global, int x_size, int y_size, int robotposeX, int robotposeY,int sensor_range){
     std::unordered_set<int> cell_changes;
     
     for(int i =0; i< x_size;i++){
         for(int j=0; j<y_size;j++){
-            if(i>robotposeX-SENSOR_REACH && i<robotposeX+SENSOR_REACH){
-                if(j>robotposeY-SENSOR_REACH && j<robotposeY+SENSOR_REACH){
+            if(i>robotposeX-sensor_range&& i<robotposeX+sensor_range){
+                if(j>robotposeY-sensor_range&& j<robotposeY+sensor_range){
                     if(current[get_key(x_size,i,j)] != global[get_key(x_size,i,j)]){
                         current[get_key(x_size,i,j)] = global[get_key(x_size,i,j)];
                         cell_changes.insert(get_key(x_size,i,j));

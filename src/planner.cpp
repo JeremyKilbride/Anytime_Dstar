@@ -31,8 +31,14 @@ std::vector<Node> get_successors(NodePtr s, Graph& g){
 }
 
 //function used by d* to calculate g val of a state
-void update_node(Graph& g, Node s,int x_size, int y_size, int* map){
+void update_node(Graph& g, 
+                 Node s,
+                 int x_size, 
+                 int y_size, 
+                 int* map, 
+                 std::priority_queue<Node,std::vector<Node>,std::greater<Node>>& open){
     double best_g=std::numeric_limits<double>::max();
+    int best_parent=-1;
     std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g);
     //loop over all successors 
     for(Node successor: successors){
@@ -48,9 +54,11 @@ void update_node(Graph& g, Node s,int x_size, int y_size, int* map){
         double g=successor.v+cost;
         if(g<best_g){
             best_g=g;
+            best_parent=idx;
         }
     }
     s.g=best_g;
+    s.parent_idx=best_parent;
     g.set(s);
 }
 
@@ -161,38 +169,84 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
 }
 
-std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal)
+std::unordered_set<int>get_successor_idxs(Node& s, int x_size, int y_size){
+    std::unordered_set<int> successors;
+    successors.reserve(8);
+    int dx[8]={0,1,0,-1,1,-1,-1,1};
+    int dy[8]={1,0,-1,0,1,-1,1,-1};
+    for(int i=0; i<8; ++i){
+        int cx=s.x+dx[i];
+        int cy=s.y+dy[i];
+        if(cx>0 && cx<x_size && cy>0 && cy<y_size){
+            int idx=get_key(x_size, cx, cy);
+            successors.insert(idx);
+        }
+    }
+    return successors;
+}
+
+int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
+    std::unordered_set<int> neighbor_idxs=get_successor_idxs(s,x_size,y_size);
+    double best_cost=std::numeric_limits<double>::max();
+    int best_idx=-1;
+    for (int idx : neighbor_idxs){
+        // cout<<"got idx "<<idx<<"\n";
+        NodePtr ptr_node=g.getAddNode(idx);
+        double cost;
+        int val=map[idx];
+        if(val==0){
+            cost=1;
+        }else{
+            cost=std::numeric_limits<double>::max();
+        }
+        // cout<<"got cost "<<cost<<"\n";
+        // cout<<"for idx got g "<<ptr_node->g<<"\n";
+        if((ptr_node->g+cost) <best_cost){
+            best_cost=ptr_node->g+cost;
+            // cout<<"updating best idx to "<<idx<<" based on best cost "<<best_cost<<"\n";
+            best_idx=idx;
+        }
+    }
+    return best_idx;
+}
+
+std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal,Graph& g, std::priority_queue<Node, std::vector<Node>, std::greater<Node>>& open_list,std::unordered_map <int, Node>& inconsistent_list)
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
-    cout<<"using D* Lite planner\n";
-    std::cout << "\n"<< "x_size: " << x_size << "\n";
-    std::cout << "\n"<< "y_size: " << y_size << "\n";
     std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
     std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
     std::unordered_map<int, Node> closed_list;
-    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> open_list;
-    std::unordered_map <int, Node> inconsistent_list;
-    goal.g=0;
+    static bool first_time=true; 
     int start_idx= get_key(x_size,start.x, start.y);
     int goal_idx= get_key(x_size,goal.x, goal.y);
-    goal.compute_h(start.x,start.y);
     start.compute_h(start.x,start.y);
-    open_list.emplace(goal);
-    Graph g(x_size,y_size);
-    g.addNode(goal);
+    if (first_time){
+        goal.g=0;
+        goal.compute_h(start.x,start.y);
+        open_list.emplace(goal);
+        g.addNode(goal);
+        first_time=false;
+    }    
+    else{
+        //move states from incons to open
+        for(auto item: inconsistent_list){
+            open_list.emplace(item.second);
+        }
+        inconsistent_list.clear();
+    }
     g.addNode(start);
     g.set_start(start_idx);
     g.set_goal(start.x,start.y);
     int num_expanded=0;
     bool expanded_start=false;
     //while f_start > min f in open
-   while(*g.get(start_idx)>open_list.top() && !open_list.empty()){
+   while(*g.get(start_idx)>open_list.top() /*|| g.get(start_idx)->v!=g.get(start_idx)->g)*/  && !open_list.empty()){
         //get top item from open 
         Node state=open_list.top();
         open_list.pop();
         std::shared_ptr<Node> state_ptr=g.get(state);
-        
+        // update_node(g,*state_ptr,x_size,y_size,map,open_list);
         //state is consistent or overconsistent
         if (state_ptr->v >= state_ptr->g){
             state_ptr->v = state_ptr->g;
@@ -228,23 +282,30 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         }
         //state is under consistent
         else{
+            cout<<"found underconsistent state";
             state_ptr->v=std::numeric_limits<double>::max();
             //update state and all successors
-            update_node(g,*state_ptr,x_size,y_size,map);
+            update_node(g,*state_ptr,x_size,y_size,map,open_list);
             open_list.emplace(*state_ptr);
             std::vector<Node> successors=get_successors(state_ptr,g);
             for (Node successor: successors){
-                update_node(g,successor,x_size,y_size,map);
-                open_list.emplace(successor);
+                update_node(g,successor,x_size,y_size,map,open_list);
             }
         }
     }
 
+    cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\nbeginning back track\n";
     int current_idx=start_idx;
+    int _c=0;
     while(current_idx!=goal_idx){
         NodePtr _current_state_ptr=g.get(current_idx);
-        current_idx=_current_state_ptr->parent_idx;
+        current_idx=get_best_neighbor_idx(g,*_current_state_ptr,map,x_size,y_size);
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
+        cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
+        if (_c>300){
+            break;
+        }
+        ++_c;
     }
     NodePtr _current_state_ptr=g.get(current_idx);
     plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
@@ -254,8 +315,9 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
-    cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\n";
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+
+
     return plan;
 }
 
@@ -266,6 +328,24 @@ void plannerAnytimeDstar()
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+}
+
+
+
+//checks if a state is within the robot's sensing range based in the robot's current position
+bool check_in_sense_range(int cx,int cy, int x, int y, int sr){
+    return (x>cx-sr && x<cx+sr && y>cy-sr && y<cy+sr);
+}
+
+//used to merge sets of indices for propagating map changes, only includes states within the sensor range of the robot
+void merge_sets(std::unordered_set<int>& big, std::unordered_set<int>& small,int cx, int cy,int sensing_rng, int x_size ){
+    for(int i: small){
+        int x=i%x_size; 
+        int y=i/x_size;
+        if(big.find(i)==big.end() && check_in_sense_range(x,y,cx,cy,sensing_rng)){
+            big.insert(i);
+        }
+    }
 }
 
 enum planner{
@@ -329,8 +409,10 @@ int main(int argc, char** argv)
         }
     }
     Node current_node(start_node.x,start_node.y);
-
-    std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y);
+    std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
+    Graph graph(x_size,y_size);
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> _open;
+    std::unordered_map <int, Node> incons;
 
     switch (which)
     {
@@ -338,11 +420,103 @@ int main(int argc, char** argv)
         plannerAstar(global_map,x_size,y_size,start_node,goal_node);
         break;
     case planner::DSTAR_LITE:
+        cout<<"using D* Lite planner\n";
+        std::cout << "\n"<< "x_size: " << x_size << "\n";
+        std::cout << "\n"<< "y_size: " << y_size << "\n";
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
-            plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node);
-            current_node.x=plan[1].first;
-            current_node.y=plan[1].second;
-            std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y);
+            //generate plan
+            plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,incons);
+            if (abs(current_node.x-plan[1].first)<=1 && abs(current_node.y-plan[1].second)<=1 ){
+                current_node.x=plan[1].first;
+                current_node.y=plan[1].second;
+            }else{
+                cout<<"invalid move, exiting";
+                return 0;
+            }
+            int current_idx=get_key(x_size,current_node.x,current_node.y);
+            std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
+            //propgate changes
+            std::unordered_set<int> further_changes;
+            bool start_updated=false;
+            //update changed nodes and their successors first
+            for(int change_idx: changes){
+                NodePtr ptr_changed=graph.getAddNode(change_idx);
+                update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open);
+                if(ptr_changed->v<ptr_changed->g){
+                    ptr_changed->v=std::numeric_limits<double>::max();
+                    graph.set(*ptr_changed);
+                }
+                if (incons.find(change_idx)!=incons.end()){
+                    incons[change_idx]=*ptr_changed;
+                }else{
+                _open.emplace(*ptr_changed);
+                }
+                std::unordered_set<int>successor_idxs=get_successor_idxs(*ptr_changed,x_size,y_size);
+                for(int idx: successor_idxs){
+                    Node successor=*graph.getAddNode(idx);
+                    update_node(graph,successor,x_size,y_size,robot_map,_open);
+                    std::unordered_set<int> next_successor_idxs=get_successor_idxs(successor,x_size,y_size);
+                    merge_sets(further_changes,next_successor_idxs,current_node.x,current_node.y,sensing_range,x_size);
+                    if(successor.v < successor.g ){
+                        successor.v=std::numeric_limits<double>::max();
+                        graph.set(successor);
+                    }
+                    if (incons.find(change_idx)!=incons.end()){
+                        incons[change_idx]=successor;
+                    }else{
+                        _open.emplace(successor);
+                    }
+                }
+            }
+            std::unordered_set<int> updated;
+            //continue propagating changes until we reach the robot start position   
+            if (!further_changes.empty()){
+                int c=0;
+                while(!start_updated){
+                    int next_idx=*further_changes.begin();
+                    further_changes.erase(further_changes.begin());
+                    NodePtr ptr_next=graph.getAddNode(next_idx);
+                    if (updated.find(next_idx)==updated.end()){
+                        update_node(graph, *ptr_next,x_size, y_size,robot_map,_open);
+                        std::unordered_set<int> next_successor_idxs=get_successor_idxs(*ptr_next,x_size,y_size);
+                        merge_sets(further_changes,next_successor_idxs,current_node.x,current_node.y,sensing_range,x_size);
+                        if(ptr_next->v < ptr_next->g){
+                            ptr_next->v=std::numeric_limits<double>::max();
+                            graph.set(*ptr_next);
+                        }
+                        if (incons.find(next_idx)!=incons.end()){
+                            incons[next_idx]=*ptr_next;
+                        }else{
+                            _open.emplace(*ptr_next);
+                        }
+                        if(next_idx==current_idx){
+                            start_updated=true;
+                        }
+                        updated.insert(next_idx);
+                    }
+                }
+                //get current robot state from graph and update successors
+                NodePtr ptr_start=graph.get(current_idx);
+                std::unordered_set<int> start_successor_idxs=get_successor_idxs(*ptr_start,x_size,y_size);
+                for(int idx: start_successor_idxs){
+                    Node successor=*graph.getAddNode(idx);
+                    if (updated.find(idx)==updated.end()){
+                        update_node(graph,successor,x_size,y_size,robot_map,_open);
+                        if(successor.v < successor.g ){
+                            successor.v=std::numeric_limits<double>::max();
+                            graph.set(successor);
+                        }
+                        if (incons.find(idx)!=incons.end()){
+                            incons[idx]=successor;
+                        }else{
+                            _open.emplace(successor);
+                        }
+                        updated.insert(idx);
+                    }
+                }
+            }
+            
+
         }
         break;
     case planner::ANYTIME_DSTAR:
