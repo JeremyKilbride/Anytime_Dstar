@@ -301,10 +301,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         NodePtr _current_state_ptr=g.get(current_idx);
         current_idx=get_best_neighbor_idx(g,*_current_state_ptr,map,x_size,y_size);
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
-        cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
-        if (_c>300){
-            break;
-        }
+        // cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
+        // if (_c>300){
+        //     break;
+        // }
         ++_c;
     }
     NodePtr _current_state_ptr=g.get(current_idx);
@@ -515,8 +515,6 @@ int main(int argc, char** argv)
                     }
                 }
             }
-            
-
         }
         break;
     case planner::ANYTIME_DSTAR:
