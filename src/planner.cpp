@@ -43,24 +43,30 @@ void update_node(Graph& g,
     double best_g=std::numeric_limits<double>::max();
     int best_parent=-1;
     std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g);
-    //loop over all successors 
-    for(Node successor: successors){
-        int idx=get_key(x_size,successor.x,successor.y);
-        int map_val=map[idx];
-        double cost;
-        if (map_val==0){
-            cost=1;
+    int idx=get_key(x_size,s.x,s.y);
+    int map_val=map[idx];
+    if (map_val==0){
+        //loop over all successors 
+        for(Node successor: successors){
+            int idx=get_key(x_size,successor.x,successor.y);
+            int map_val=map[idx];
+            double cost;
+            if (map_val==0){
+                cost=1;
+            }
+            else{
+                cost=std::numeric_limits<double>::max();
+            }
+            double g=successor.v+cost;
+            if(g<best_g){
+                best_g=g;
+                best_parent=idx;
+            }
         }
-        else{
-            cost=std::numeric_limits<double>::max();
-        }
-        double g=successor.v+cost;
-        if(g<best_g){
-            best_g=g;
-            best_parent=idx;
-        }
+        s.g=best_g;
+    }else{
+        s.g=std::numeric_limits<double>::max();
     }
-    s.g=best_g;
     s.parent_idx=best_parent;
     g.set(s);
 }
@@ -300,7 +306,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         }
         //state is under consistent
         else{
-            cout<<"found underconsistent state";
+            cout<<"found underconsistent state\n";
             state_ptr->v=std::numeric_limits<double>::max();
             //update state and all successors
             update_node(g,*state_ptr,x_size,y_size,map,open_list);
@@ -470,7 +476,7 @@ int main(int argc, char** argv)
             //propgate changes
             std::unordered_set<int> further_changes;
             bool start_updated=false;
-            int sensing_offset=1;
+            int sensing_offset=2;
             //check if we need to replan on next iteration
             for (int i =0; i<plan.size();++i){
                 std::pair<int,int> item=plan[i];
