@@ -45,7 +45,14 @@ if __name__=="__main__":
             binary_map.append(binary_map_line)
         line=map_file.readline()
     goal=traj[-1]
+    robot_goal=[int(item) for item in goal.split(",")]
+    print(robot_goal)
     map_arr=np.array(binary_map)
+    plt.imshow(map_arr.T)
+    plt.scatter(robot_start[0],robot_start[1],30,"g")
+    plt.scatter(robot_goal[0],robot_goal[1],30,"r")
+    new_map_name=sys.argv[2].split(".")
+    plt.savefig(new_map_name[0]+".png")
     np.savetxt(sys.argv[2],map_arr,fmt="%d",delimiter=",")
     new_map=open(sys.argv[2],"r")
     new_maplines=new_map.readlines()
