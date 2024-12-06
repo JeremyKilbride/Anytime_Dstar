@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <iostream>
 #include <queue>
 #include <limits>
@@ -29,7 +30,9 @@ struct Node
     int y;
     double g=std::numeric_limits<double>::max();
     double h=std::numeric_limits<double>::max();
-    double v=std::numeric_limits<double>::max();
+    double rhs=std::numeric_limits<double>::max();
+    double km=0;
+    bool is_goal=false;
     int parent_idx=-1;
 
     Node(int x, int y): x(x), y(y){}
@@ -38,8 +41,7 @@ struct Node
 
     Node(){}
 
-    void compute_h(int gx, int gy){//TODO:update this
-        this->h=0;
+    void compute_h(int gx, int gy){
         this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
 
     }
@@ -49,7 +51,9 @@ struct Node
         this->y=incoming.y;
         this->g=incoming.g;
         this->h=incoming.h;
-        this->v=incoming.v;
+        this->rhs=incoming.rhs;
+        this->km=incoming.km;
+        this->is_goal=incoming.is_goal;
         this->parent_idx=incoming.parent_idx;
         return *this;
     }
@@ -74,6 +78,9 @@ class Graph
         int goal_x=-1;
         int goal_y=-1;
     public:
+        double km=0;
+
+
         Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
             nodeMap.reserve(x_size*y_size);
         }
@@ -87,12 +94,15 @@ class Graph
     
         void addNode(Node& newNode){
             int idx=get_key(x_size,newNode.x,newNode.y);
+            newNode.km=this->km;
             nodeMap.emplace(idx,newNode);
         }
         
 
         void addNode(int x, int y){
             Node newNode(x,y);
+            newNode.compute_h(goal_x,goal_y);
+            newNode.km=this->km;
             nodeMap.emplace(get_key(x_size,newNode.x,newNode.y),newNode);
         }
 
@@ -148,7 +158,6 @@ class Graph
                 return nullptr;
             }else{
                 Node ret=it->second;
-                ret.compute_h(goal_x,goal_y);
                 return std::make_shared<Node>(ret);
             }
         }
@@ -159,7 +168,6 @@ class Graph
                 return nullptr;
             }else{
                 Node ret=it->second;
-                ret.compute_h(goal_x,goal_y);
                 return std::make_shared<Node>(ret);
             }
         }
