@@ -6,7 +6,7 @@
 			[
 				{
 					"build" : ".",
-					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"jsonFile" : "directory-.-Release-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
 					{
 						"string" : "3.0"
@@ -19,7 +19,7 @@
 					]
 				}
 			],
-			"name" : "Debug",
+			"name" : "Release",
 			"projects" : 
 			[
 				{
@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "planner::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-planner-Debug-4ef7ed8648de7be06f9f.json",
+					"jsonFile" : "target-planner-Release-c6761ba62658f7bba1c9.json",
 					"name" : "planner",
 					"projectIndex" : 0
 				}

@@ -79,11 +79,13 @@ if __name__ == "__main__":
     
     line1, = ax.plot([], [], lw=2, marker='o', color='b', label='robot')
     line2, = ax.plot([], [], lw=2, marker='o', color='r', label='target')
+    line3, = ax.plot([], [], lw=2, marker='o', color='g', label='robot')
     
     def init():
         line1.set_data([], [])
         line2.set_data([], [])
-        return line1, line2
+        line3.set_data([],[])
+        return line1, line2, line3
     
 
     def update(frame):
@@ -94,6 +96,7 @@ if __name__ == "__main__":
             first_robot_position = robot_path[0]  # First dictionary in the list
             robotX = first_robot_position['x']
             robotY = first_robot_position['y']
+            line3.set_data([robotX],[robotY])
             for i in range(x_size):
                 # print("i: "+str(i))
                 for j in range(y_size):
@@ -112,11 +115,12 @@ if __name__ == "__main__":
         # Update target trajectory for this frame
         # line2.set_data([p['x'] for p in target_trajectory[:frame+1]], [p['y'] for p in target_trajectory[:frame+1]])
         line2.set_data([p['x'] for p in target_trajectory[:frame+1]], [p['y'] for p in target_trajectory[:frame+1]])
+        
 
-        return line1, line2
+        return line1, line2, line3
     
     ani = FuncAnimation(fig, update, frames=int(len(robot_trajectory)/SpeedUp)-1, init_func=init, blit=False, interval=1)
-    ani.save(filename = "Animation.mp4")
+    ani.save(filename = "Animation2.mp4")
     print("UHHH done")
     plt.legend()
     plt.show()

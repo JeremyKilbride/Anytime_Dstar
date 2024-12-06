@@ -85,7 +85,7 @@ std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, N
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     cout<<"using A* planner\n";
-
+    int states_expanded = 0;
     int* closed = new int[x_size*y_size]();
     Graph Astar_graph(x_size,y_size);
     std::priority_queue<std::shared_ptr<Node>,std::vector<std::shared_ptr<Node>>,CompareNode> open;
@@ -111,7 +111,7 @@ std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, N
             open.pop();
         }
         
-        
+        states_expanded ++;
         if(!closed[s]){ 
             
             closed[s] = 1; 
@@ -175,7 +175,7 @@ std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, N
 
     
     cout<<"got plan with length "<<plan.size()<<"\n";
-
+    cout<<"states expanded: "<<states_expanded<<"\n";
     delete[] closed;
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
@@ -318,7 +318,7 @@ void output(const std::vector<std::pair<int, int>>& plan) {
     output_file << -1 << "," << -1 << "\n";
 
     output_file.close();
-    std::cout << "Trajectory appended to " << outputFilePath << std::endl;
+    // std::cout << "Trajectory appended to " << outputFilePath << std::endl;
 }
 
 int main(int argc, char** argv)

@@ -55,7 +55,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : " -fsanitize=address -fno-omit-frame-pointer -fsanitize=address -fno-omit-frame-pointer -g"
+					"fragment" : "-O3"
 				},
 				{
 					"fragment" : "-std=gnu++14"
@@ -100,7 +100,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-fsanitize=address -fno-omit-frame-pointer -fsanitize=address -fno-omit-frame-pointer -g",
+				"fragment" : "-O3",
 				"role" : "flags"
 			},
 			{
