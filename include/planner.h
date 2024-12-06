@@ -278,6 +278,7 @@ bool read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
             if (j != y_size-1) ss.ignore();
         }
     }
+
     myfile.close();
     return true;
 

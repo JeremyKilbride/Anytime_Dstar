@@ -465,8 +465,8 @@ int main(int argc, char** argv)
             //generate plan
             if(need_replan){
                 cout<<"replanning with map:\n";
-                for (int x=0;x<x_size;++x){
-                    for (int y=0;y<y_size;++y){
+                for (int y=0;y<y_size;++y){
+                    for (int x=0;x<x_size;++x){
                         int val=robot_map[get_key(x_size,x,y)];
                         if (x==current_node.x && y==current_node.y){
                             cout<<"R,";
