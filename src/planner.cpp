@@ -11,7 +11,7 @@
 
 using std::cout;
 
-std::vector<Node> get_successors(NodePtr s, Graph& g){
+std::vector<Node> get_successors(NodePtr s, Graph& g, int* map){
     std::vector<Node> successors;
     successors.reserve(8);
     int dx[8]={0,1,0,-1,1,-1,-1,1};
@@ -21,12 +21,9 @@ std::vector<Node> get_successors(NodePtr s, Graph& g){
         int successor_x=s->x+dx[i];
         int successor_y=s->y+dy[i];
         int idx=get_key(g._x_size(),successor_x,successor_y);
-        if(0<=successor_x && successor_x<g._x_size() && 0<=successor_y && successor_y<g._y_size()){
+        if(0<=successor_x && successor_x<g._x_size() && 0<=successor_y && successor_y<g._y_size() && map[idx]==0){
             NodePtr successor_ptr=g.getAddNode(idx);
             successor_ptr->parent_idx=s_idx;
-            //Wassmann code
-            g.set(*successor_ptr);
-            //Wassmann code
             successors.emplace_back(*successor_ptr);
         }
     }
@@ -50,18 +47,19 @@ void update_node(Graph& g,
                  int y_size, 
                  int* map, 
                  std::set<Node,std::greater<Node>>& open){
+
     if(!s.is_goal){
         double best_rhs=std::numeric_limits<double>::max();
-        std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g);
+        std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g, map);
         int idx=get_key(x_size,s.x,s.y);
         int map_val=map[idx];
+        //loop over all successors 
         if (map_val==0){
-            //loop over all successors 
             for(Node successor: successors){
-                int idx=get_key(x_size,successor.x,successor.y);
-                int map_val=map[idx];
+                int successor_idx=get_key(x_size,successor.x,successor.y);
+                int successor_map_val=map[successor_idx];
                 double cost;
-                if (map_val==0){
+                if (successor_map_val==0){
                     cost=1;
                 }
                 else{
@@ -73,7 +71,9 @@ void update_node(Graph& g,
                 }
             }
             s.rhs=best_rhs;
-        }else{
+        }
+        else{
+            s.g=std::numeric_limits<double>::max();
             s.rhs=std::numeric_limits<double>::max();
         }
     }
@@ -82,7 +82,7 @@ void update_node(Graph& g,
         open.erase(it);
     }
     if(s.g!=s.rhs){
-        s.km=g.km;
+        g.calculate_node_key(s);
         open.emplace(s);
     }
     g.set(s);
@@ -91,32 +91,25 @@ void update_node(Graph& g,
 
 bool operator> (const Node& lhs,const Node& rhs)
 {
-    double rhs_min=std::min(rhs.g,rhs.rhs);
-    double lhs_min=std::min(lhs.g,lhs.rhs);
-    double lhs_f = lhs_min + lhs.h + lhs.km;
-    double rhs_f = rhs_min + rhs.h + rhs.km;
-    if (lhs_f==rhs_f){
-        return lhs_min>rhs_min;
+   if (lhs.key.first==rhs.key.first){
+        return lhs.key.second>rhs.key.second;
     }else{
-        return lhs_f > rhs_f;
+        return lhs.key.first > rhs.key.first;
     }
 }
 
 bool operator> (Node& lhs, Node& rhs)
 {
-    double rhs_min=std::min(rhs.g,rhs.rhs);
-    double lhs_min=std::min(lhs.g,lhs.rhs);
-    double lhs_f = lhs_min + lhs.h + lhs.km;
-    double rhs_f = rhs_min + rhs.h + rhs.km;
-    if (lhs_f==rhs_f){
-        return lhs_min>rhs_min;
+    if (lhs.key.first==rhs.key.first){
+        return lhs.key.second>rhs.key.second;
     }else{
-        return lhs_f > rhs_f;
+        return lhs.key.first > rhs.key.first;
     }
 }
 
 double computeHeuristic(Node current, Node goal_node){
-    return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
+    // return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
+    return std::max(abs(goal_node.x - current.x),abs((goal_node.y-current.y)));
 };
 
 
@@ -214,7 +207,7 @@ void plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
 }
 
-std::unordered_set<int>get_successor_idxs(Node& s, int x_size, int y_size){
+std::unordered_set<int>get_successor_idxs(Node& s, int x_size, int y_size, int* map){
     std::unordered_set<int> successors;
     successors.reserve(8);
     int dx[8]={0,1,0,-1,1,-1,-1,1};
@@ -222,7 +215,8 @@ std::unordered_set<int>get_successor_idxs(Node& s, int x_size, int y_size){
     for(int i=0; i<8; ++i){
         int cx=s.x+dx[i];
         int cy=s.y+dy[i];
-        if(cx>=0 && cx<x_size && cy>=0 && cy<y_size){
+        int s_idx=get_key(x_size,cx,cy);
+        if(cx>=0 && cx<x_size && cy>=0 && cy<y_size && map[s_idx]==0){
             int idx=get_key(x_size, cx, cy);
             successors.insert(idx);
         }
@@ -231,12 +225,12 @@ std::unordered_set<int>get_successor_idxs(Node& s, int x_size, int y_size){
 }
 
 int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
-    std::unordered_set<int> neighbor_idxs=get_successor_idxs(s,x_size,y_size);
+    std::unordered_set<int> neighbor_idxs=get_successor_idxs(s,x_size,y_size, map);
     double best_cost=std::numeric_limits<double>::max();
     int best_idx=-1;
     for (int idx : neighbor_idxs){
         NodePtr ptr_node=g.getAddNode(idx);
-        cout<<"got state "<<ptr_node->x<<", "<<ptr_node->y<<"\n";
+        // cout<<"got state "<<ptr_node->x<<", "<<ptr_node->y<<"\n";
         double cost;
         int val=map[idx];
         if(val==0){
@@ -244,8 +238,8 @@ int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
         }else{
             cost=std::numeric_limits<double>::max();
         }
-        cout<<"got cost "<<cost<<"\n";
-        cout<<"for idx got g "<<ptr_node->g<<"\n";
+        // cout<<"got cost "<<cost<<"\n";
+        // cout<<"for idx got g "<<ptr_node->g<<"\n";
         if((ptr_node->g+cost) <best_cost){
             best_cost=ptr_node->g+cost;
             // cout<<"updating best idx to "<<idx<<" based on best cost "<<best_cost<<"\n";
@@ -268,26 +262,30 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     start.compute_h(start.x,start.y);
     if (first_time){
         goal.rhs=0;
-        goal.compute_h(start.x,start.y);
+        g.calculate_node_key(goal);
         goal.is_goal=true;
         open_list.emplace(goal);
         g.addNode(goal);
         first_time=false;
-    }    
+    }
     g.addNode(start);
     g.set_start(start_idx);
     g.set_goal(start.x,start.y);
     int num_expanded=0;
     bool expanded_start=false;
     cout<<"open list size: "<<open_list.size()<<"\n";
-   while((*g.get(start_idx)>*open_list.begin() || g.get(start_idx)->rhs!=g.get(start_idx)->g)  && !open_list.empty()){
+   while(g.calculate_start_key()>*open_list.begin() || g.get(start_idx)->rhs != g.get(start_idx)->g){
+        //DEBUG CODE
+        // cout<<"open list size: "<<open_list.size()<<"\n";
         //get top item from open 
         Node state=*open_list.begin();
         open_list.erase(open_list.begin());
         std::shared_ptr<Node> state_ptr=g.get(state);
         Node copy_new_km=state;
-        copy_new_km.km=g.km;
+        g.calculate_node_key(copy_new_km);
         if(copy_new_km>state){
+            copy_new_km.compute_h(start.x,start.y);
+            g.set(copy_new_km);
             open_list.emplace(copy_new_km);
         }
         //state is overconsistent
@@ -296,7 +294,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             state_ptr->g = state_ptr->rhs;
             g.set(*state_ptr);
             int state_idx=get_key(x_size,state_ptr->x,state_ptr->y);             
-            std::vector<Node> successors=get_successors(state_ptr,g);
+            std::vector<Node> successors=get_successors(state_ptr,g,map);
             for(Node successor: successors){
                 update_node(g, successor, x_size, y_size, map, open_list);
             }
@@ -306,9 +304,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             ++num_expanded;
             cout<<"found underconsistent state\n";
             state_ptr->g=std::numeric_limits<double>::max();
+            g.set(*state_ptr);
             //update state and all successors
             update_node(g,*state_ptr,x_size,y_size,map,open_list);
-            std::vector<Node> successors=get_successors(state_ptr,g);
+            std::vector<Node> successors=get_successors(state_ptr,g,map);
             for (Node successor: successors){
                 update_node(g,successor,x_size,y_size,map,open_list);
             }
@@ -316,22 +315,22 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     }
 
     cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\nbeginning back track\n";
-    cout<<"goal node, g "<<g.get(goal_idx)->g<<" ,rhs "<<g.get(goal_idx)->rhs;
+    cout<<"goal node, g "<<g.get(goal_idx)->g<<" ,rhs "<<g.get(goal_idx)->rhs<<"\n";
     int current_idx=start_idx;
     int _c=0;
     while(current_idx!=goal_idx){
         NodePtr _current_state_ptr=g.get(current_idx);
         current_idx=get_best_neighbor_idx(g,*_current_state_ptr,map,x_size,y_size);
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
-        cout<<" start is "<<start.x<<", "<<start.y<<"\n";
-        cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
-        cout<<"with g:"<<_current_state_ptr->g<<"\n";
-        cout<<"and h value: "<<_current_state_ptr->h<<"\n";
-        cout<<"and rhs value: "<<_current_state_ptr->rhs<<"\n";
-        cout<<"and map value: "<< map[get_key(x_size,_current_state_ptr->x,_current_state_ptr->y)]<<"\n";
-        if (_c>12){
-            break;
-        }
+        // cout<<" start is "<<start.x<<", "<<start.y<<"\n";
+        // cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
+        // cout<<"with g:"<<_current_state_ptr->g<<"\n";
+        // cout<<"and h value: "<<_current_state_ptr->h<<"\n";
+        // cout<<"and rhs value: "<<_current_state_ptr->rhs<<"\n";
+        // cout<<"and map value: "<< map[get_key(x_size,_current_state_ptr->x,_current_state_ptr->y)]<<"\n";
+        // if (_c>12){
+        //     break;
+        // }
         ++_c;
     }
     NodePtr _current_state_ptr=g.get(current_idx);
@@ -439,14 +438,14 @@ int main(int argc, char** argv)
     std::set<Node, std::greater<Node>> _open;
     Node last_replan_node=current_node;
     //debug code
-    cout<<"got map:\n";
-    for (int x=0;x<x_size;++x){
-        for (int y=0;y<y_size;++y){
-            int val=global_map[get_key(x_size,x,y)];
-            cout<<val<<",";
-        }
-        cout<<"\n";
-    }
+    // cout<<"got map:\n";
+    // for (int x=0;x<x_size;++x){
+    //     for (int y=0;y<y_size;++y){
+    //         int val=global_map[get_key(x_size,x,y)];
+    //         cout<<val<<",";
+    //     }
+    //     cout<<"\n";
+    // }
 
 
     switch (which)
@@ -464,22 +463,22 @@ int main(int argc, char** argv)
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
             //generate plan
             if(need_replan){
-                cout<<"replanning with map:\n";
-                for (int x=0;x<x_size;++x){
-                    for (int y=0;y<y_size;++y){
-                        int val=robot_map[get_key(x_size,x,y)];
-                        if (x==current_node.x && y==current_node.y){
-                            cout<<"R,";
-                        }else if(x==goal_node.x && y==goal_node.y){
-                            cout<<"G,";
-                        }
-                        else{
-                            cout<<val<<",";
-                        }
+                // cout<<"replanning with map:\n";
+                // for (int x=0;x<x_size;++x){
+                //     for (int y=0;y<y_size;++y){
+                //         int val=robot_map[get_key(x_size,x,y)];
+                //         if (x==current_node.x && y==current_node.y){
+                //             cout<<"R,";
+                //         }else if(x==goal_node.x && y==goal_node.y){
+                //             cout<<"G,";
+                //         }
+                //         else{
+                //             cout<<val<<",";
+                //         }
 
-                    }
-                    cout<<"\n";
-                }
+                //     }
+                //     cout<<"\n";
+                // }
                 plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open);
                 need_replan=false;
             }
@@ -498,7 +497,6 @@ int main(int argc, char** argv)
             int current_idx=get_key(x_size,current_node.x,current_node.y);
             std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
             //propgate changes
-            std::unordered_set<int> further_changes;
             bool start_updated=false;
             int sensing_offset=2;
             //check if we need to replan on next iteration
@@ -517,11 +515,6 @@ int main(int argc, char** argv)
             for(int change_idx: changes){
                 NodePtr ptr_changed=graph.getAddNode(change_idx);
                 update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open);
-                std::unordered_set<int>successor_idxs=get_successor_idxs(*ptr_changed,x_size,y_size);
-                for(int idx: successor_idxs){
-                    Node successor=*graph.getAddNode(idx);
-                    update_node(graph,successor,x_size,y_size,robot_map,_open);
-                }
             }
         }
         break;

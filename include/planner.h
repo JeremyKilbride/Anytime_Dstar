@@ -29,9 +29,10 @@ struct Node
     int x;
     int y;
     double g=std::numeric_limits<double>::max();
-    double h=std::numeric_limits<double>::max();
+    double h=0;
     double rhs=std::numeric_limits<double>::max();
     double km=0;
+    std::pair<double,double> key;
     bool is_goal=false;
     int parent_idx=-1;
 
@@ -42,8 +43,8 @@ struct Node
     Node(){}
 
     void compute_h(int gx, int gy){
-        this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
-
+        // this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
+        this->h= std::max(abs(gx - this->x),abs((gy-this->y)));
     }
 
     Node operator=(const Node& incoming){
@@ -53,6 +54,7 @@ struct Node
         this->h=incoming.h;
         this->rhs=incoming.rhs;
         this->km=incoming.km;
+        this->key=incoming.key;
         this->is_goal=incoming.is_goal;
         this->parent_idx=incoming.parent_idx;
         return *this;
@@ -75,16 +77,23 @@ class Graph
         int x_size;
         int y_size;
         int start_idx=-1;
-        int goal_x=-1;
-        int goal_y=-1;
     public:
         double km=0;
-
+        int goal_x=-1;
+        int goal_y=-1;
 
         Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
             nodeMap.reserve(x_size*y_size);
         }
-    
+
+        void calculate_node_key(Node& s){
+            double min=std::min(s.g,s.rhs);
+            s.km=this->km;
+            s.key.second=min;
+            s.compute_h(this->goal_x,this->goal_y);
+            s.key.first=min+s.h+s.km;
+        }
+
         void set_start(int s){this->start_idx=s;}
 
         void set_goal(int gx, int gy){
@@ -94,7 +103,6 @@ class Graph
     
         void addNode(Node& newNode){
             int idx=get_key(x_size,newNode.x,newNode.y);
-            newNode.km=this->km;
             nodeMap.emplace(idx,newNode);
         }
         
@@ -148,7 +156,6 @@ class Graph
                 return nullptr;
             }else{
                 Node ret=it->second;
-                ret.compute_h(goal_x,goal_y);
                 return std::make_shared<Node>(ret);
             }
         }
@@ -160,6 +167,13 @@ class Graph
                 Node ret=it->second;
                 return std::make_shared<Node>(ret);
             }
+        }
+
+        Node calculate_start_key(){
+            NodePtr start_ptr = this->get(this->start_idx);
+            this->calculate_node_key(*start_ptr);
+            this->set(*start_ptr);
+            return *start_ptr;
         }
 
         NodePtr get(int idx){
