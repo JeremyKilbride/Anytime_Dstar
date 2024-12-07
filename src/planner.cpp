@@ -463,18 +463,18 @@ int main(int argc, char** argv)
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
             //generate plan
             if(need_replan){
-                // cout<<"replanning with map:\n";
-                // for (int x=0;x<x_size;++x){
-                //     for (int y=0;y<y_size;++y){
-                //         int val=robot_map[get_key(x_size,x,y)];
-                //         if (x==current_node.x && y==current_node.y){
-                //             cout<<"R,";
-                //         }else if(x==goal_node.x && y==goal_node.y){
-                //             cout<<"G,";
-                //         }
-                //         else{
-                //             cout<<val<<",";
-                //         }
+                cout<<"replanning with map:\n";
+                for (int y=0;y<y_size;++y){
+                    for (int x=0;x<x_size;++x){
+                        int val=robot_map[get_key(x_size,x,y)];
+                        if (x==current_node.x && y==current_node.y){
+                            cout<<"R,";
+                        }else if(x==goal_node.x && y==goal_node.y){
+                            cout<<"G,";
+                        }
+                        else{
+                            cout<<val<<",";
+                        }
 
                 //     }
                 //     cout<<"\n";

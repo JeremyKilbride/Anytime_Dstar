@@ -42,8 +42,8 @@ if __name__=="__main__":
     
     map_arr=np.array(map_)
 
-    map_arr[robot_x,robot_y]=4
-    map_arr[goal_x,goal_y]=3
+    map_arr[robot_y,robot_x]=4
+    map_arr[goal_y,goal_x]=3
     print(f"map:\n{map_arr}")
     plt.imshow(map_arr)
     # plt.scatter(robot_y,robot_x,50,"g")
