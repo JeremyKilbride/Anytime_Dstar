@@ -30,7 +30,7 @@ std::vector<Node> get_successors(NodePtr s, Graph& g, int* map){
     return successors; 
 }
 //a find function that only checks if a node's x and y vals are equivalent, rather than all member variables
-std::set<Node>::iterator find_node(const std::set<Node,std::greater<Node>>& open,const Node& s){
+std::set<Node>::iterator find_node(const std::set<Node,std::less<Node>>& open,const Node& s){
     
     for(std::set<Node>::iterator it=open.begin();it!=open.end();++it){
         if(it->x==s.x &&it->y==s.y){
@@ -46,9 +46,10 @@ void update_node(Graph& g,
                  int x_size, 
                  int y_size, 
                  int* map, 
-                 std::set<Node,std::greater<Node>>& open){
+                 std::set<Node,std::less<Node>>& open){
 
     if(!s.is_goal){
+        // cout<<"updating node "<<s.x<<", "<<s.y<<"\n";
         double best_rhs=std::numeric_limits<double>::max();
         std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g, map);
         int idx=get_key(x_size,s.x,s.y);
@@ -56,6 +57,7 @@ void update_node(Graph& g,
         //loop over all successors 
         if (map_val==0){
             for(Node successor: successors){
+                // cout<<"got successor "<<successor.x<<", "<<successor.y<<" with g: "<<successor.g<<"\n";
                 int successor_idx=get_key(x_size,successor.x,successor.y);
                 int successor_map_val=map[successor_idx];
                 double cost;
@@ -70,6 +72,7 @@ void update_node(Graph& g,
                     best_rhs=rhs;
                 }
             }
+            // cout<<"setting rhs to "<<best_rhs<<"\n";
             s.rhs=best_rhs;
         }
         else{
@@ -79,33 +82,57 @@ void update_node(Graph& g,
     }
     auto it=find_node(open,s);
     if(it!=open.end()){
+        cout<<"removing "<<it->x << ", "<< it->y<<"from open\n";
         open.erase(it);
     }
     if(s.g!=s.rhs){
         g.calculate_node_key(s);
-        open.emplace(s);
+        cout<<"adding "<<s.x<<", "<<s.y<<" to open with g: "<<s.g<<" rhs "<<s.rhs<<" h "<<s.h <<" k1: "<<s.key.first<<" and k2 "<<s.key.second << "\n" ;
+        std::pair<std::set<Node>::iterator,bool>ret=open.emplace(s);
+        if (!ret.second){
+            cout<<"insertion failed\n";
+        }
     }
     g.set(s);
 }
 
 
-bool operator> (const Node& lhs,const Node& rhs)
+bool operator< (const Node& lhs,const Node& rhs)
 {
    if (lhs.key.first==rhs.key.first){
-        return lhs.key.second>rhs.key.second;
+        if(lhs.key.second==rhs.key.second){
+            if(lhs.x==rhs.x){
+                return lhs.y < rhs.y;
+            }
+            else{
+                return lhs.x < rhs.x;
+            }
+        }else{
+            return lhs.key.second < rhs.key.second;
+        }
     }else{
-        return lhs.key.first > rhs.key.first;
+        return lhs.key.first < rhs.key.first;
     }
 }
 
-bool operator> (Node& lhs, Node& rhs)
+bool operator< (Node& lhs,Node& rhs)
 {
-    if (lhs.key.first==rhs.key.first){
-        return lhs.key.second>rhs.key.second;
+   if (lhs.key.first==rhs.key.first){
+        if(lhs.key.second==rhs.key.second){
+            if(lhs.x==rhs.x){
+                return lhs.y < rhs.y;
+            }
+            else{
+                return lhs.x < rhs.x;
+            }
+        }else{
+            return lhs.key.second < rhs.key.second;
+        }
     }else{
-        return lhs.key.first > rhs.key.first;
+        return lhs.key.first < rhs.key.first;
     }
 }
+
 
 double computeHeuristic(Node current, Node goal_node){
     // return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
@@ -249,7 +276,7 @@ int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
     return best_idx;
 }
 
-std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal,Graph& g, std::set<Node, std::greater<Node>>& open_list)
+std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal,Graph& g, std::set<Node, std::less<Node>>& open_list)
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
@@ -274,35 +301,38 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     int num_expanded=0;
     bool expanded_start=false;
     cout<<"open list size: "<<open_list.size()<<"\n";
-   while(g.calculate_start_key()>*open_list.begin() || g.get(start_idx)->rhs != g.get(start_idx)->g){
+   while(*open_list.begin()<g.calculate_start_key() || g.get(start_idx)->rhs != g.get(start_idx)->g){
         //DEBUG CODE
-        // cout<<"open list size: "<<open_list.size()<<"\n";
+        cout<<"open list size: "<<open_list.size()<<"\n";
+
         //get top item from open 
         Node state=*open_list.begin();
         open_list.erase(open_list.begin());
         std::shared_ptr<Node> state_ptr=g.get(state);
         Node copy_new_km=state;
         g.calculate_node_key(copy_new_km);
-        if(copy_new_km>state){
-            copy_new_km.compute_h(start.x,start.y);
+        if(state<copy_new_km){
+            // copy_new_km.compute_h(start.x,start.y);
+            cout<<"adding copy with new KM to open\n";
             g.set(copy_new_km);
             open_list.emplace(copy_new_km);
         }
         //state is overconsistent
         else if (state_ptr->g > state_ptr->rhs){
+            cout<<"found overconsistent state "<<state_ptr->x <<", "<<state_ptr->y<<" with g: "<<state_ptr->g<<" and rhs: "<<state_ptr->rhs<<"\n";
             ++num_expanded;
             state_ptr->g = state_ptr->rhs;
             g.set(*state_ptr);
-            int state_idx=get_key(x_size,state_ptr->x,state_ptr->y);             
             std::vector<Node> successors=get_successors(state_ptr,g,map);
             for(Node successor: successors){
                 update_node(g, successor, x_size, y_size, map, open_list);
             }
+            cout<<"after expnding state open list size "<<open_list.size()<<"\n";
         }
         //state is under consistent
         else{
             ++num_expanded;
-            cout<<"found underconsistent state\n";
+            cout<<"found underconsistent state "<<state_ptr->x <<", "<<state_ptr->y<<" with g: "<<state_ptr->g<<" and rhs: "<<state_ptr->rhs<<"\n";
             state_ptr->g=std::numeric_limits<double>::max();
             g.set(*state_ptr);
             //update state and all successors
@@ -311,6 +341,11 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             for (Node successor: successors){
                 update_node(g,successor,x_size,y_size,map,open_list);
             }
+        }
+
+        //debug code
+        if (num_expanded>50){
+            return plan;
         }
     }
 
@@ -435,7 +470,7 @@ int main(int argc, char** argv)
     std::unordered_map <int, Node> incons;
     bool need_replan=true;
     int current_plan_idx=1;
-    std::set<Node, std::greater<Node>> _open;
+    std::set<Node, std::less<Node>> _open;
     Node last_replan_node=current_node;
     //debug code
     // cout<<"got map:\n";
@@ -463,19 +498,18 @@ int main(int argc, char** argv)
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){    
             //generate plan
             if(need_replan){
-                cout<<"replanning with map:\n";
-                for (int y=0;y<y_size;++y){
-                    for (int x=0;x<x_size;++x){
-                        int val=robot_map[get_key(x_size,x,y)];
-                        if (x==current_node.x && y==current_node.y){
-                            cout<<"R,";
-                        }else if(x==goal_node.x && y==goal_node.y){
-                            cout<<"G,";
-                        }
-                        else{
-                            cout<<val<<",";
-                        }
-
+                // cout<<"replanning with map:\n";
+                // for (int y=0;y<y_size;++y){
+                //     for (int x=0;x<x_size;++x){
+                //         int val=robot_map[get_key(x_size,x,y)];
+                //         if (x==current_node.x && y==current_node.y){
+                //             cout<<"R,";
+                //         }else if(x==goal_node.x && y==goal_node.y){
+                //             cout<<"G,";
+                //         }
+                //         else{
+                //             cout<<val<<",";
+                //         }
                 //     }
                 //     cout<<"\n";
                 // }
