@@ -130,7 +130,8 @@ bool operator< (Node& lhs,Node& rhs)
 
 double computeHeuristic(Node current, Node goal_node){
     // return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
-    return std::max(abs(goal_node.x - current.x),abs((goal_node.y-current.y)));
+    // return std::max(abs(goal_node.x - current.x),abs((goal_node.y-current.y)));
+    return 0;
 };
 
 

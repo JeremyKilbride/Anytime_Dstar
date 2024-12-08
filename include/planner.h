@@ -44,7 +44,8 @@ struct Node
 
     void compute_h(int gx, int gy){
         // this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
-        this->h= std::max(abs(gx - this->x),abs((gy-this->y)));
+        // this->h= std::max(abs(gx - this->x),abs((gy-this->y)));
+        this->h=0;
     }
 
     Node operator=(const Node& incoming){
