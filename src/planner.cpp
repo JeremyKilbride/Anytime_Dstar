@@ -147,7 +147,7 @@ std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, N
     int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
-    cout<<"using A* planner\n";
+    //cout<<"using A* planner\n";
     int states_expanded = 0;
     int* closed = new int[x_size*y_size]();
     Graph Astar_graph(x_size,y_size);
@@ -237,12 +237,12 @@ std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, N
     plan.insert(plan.begin(),std::make_pair(_current_state_ptr->x,_current_state_ptr->y));
 
     
-    cout<<"got plan with length "<<plan.size()<<"\n";
-    cout<<"states expanded: "<<states_expanded<<"\n";
+    //cout<<"got plan with length "<<plan.size()<<"\n";
+    //cout<<"states expanded: "<<states_expanded<<"\n";
     delete[] closed;
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
-    cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+    //cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
     total_time+=(double)planner_time.count()/1000;
     total_expanded+=states_expanded;
     return plan;
@@ -290,8 +290,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
-    std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
-    std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
+    //std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
+    //std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
     static bool first_time=true; 
     int start_idx= get_key(x_size,start.x, start.y);
     int goal_idx= get_key(x_size,goal.x, goal.y);
@@ -309,8 +309,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     g.set_start(start_idx);
     int num_expanded=0;
     bool expanded_start=false;
-    cout<<"open list size: "<<open_list.size()<<"\n";
-    cout<<"start state map val "<<map[start_idx]<<"\n";
+    //cout<<"open list size: "<<open_list.size()<<"\n";
+    //cout<<"start state map val "<<map[start_idx]<<"\n";
    while(*open_list.begin()<g.calculate_start_key() || g.get(start_idx)->rhs != g.get(start_idx)->g){
         //get top item from open 
         Node state=*open_list.begin();
@@ -346,8 +346,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         }
     }
 
-    cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\nbeginning back track\n";
-    cout<<"goal node, g "<<g.get(goal_idx)->g<<" ,rhs "<<g.get(goal_idx)->rhs<<"\n";
+    //cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\nbeginning back track\n";
+    //cout<<"goal node, g "<<g.get(goal_idx)->g<<" ,rhs "<<g.get(goal_idx)->rhs<<"\n";
     int current_idx=start_idx;
     while(current_idx!=goal_idx){
         NodePtr _current_state_ptr=g.get(current_idx);
@@ -356,10 +356,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     }
     NodePtr _current_state_ptr=g.get(current_idx);
     plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
-    cout<<"got plan with length "<<plan.size()<<"\n";
+    //cout<<"got plan with length "<<plan.size()<<"\n";
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
-    cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+    //cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
     total_time+=(double)planner_time.count()/1000;
     total_expanded+=num_expanded;
     return plan;
@@ -515,18 +515,23 @@ int main(int argc, char** argv)
         ++num_plans;
         output(plan);
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){
-            current_node.x=plan[1].first;
-            current_node.y=plan[1].second;
-            changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
+            current_node.x=plan[current_plan_idx].first;
+            current_node.y=plan[current_plan_idx].second;
+            current_plan_idx++;
             ++num_steps;
-            plan=plannerAstar(robot_map,x_size,y_size,current_node,goal_node,total_time,total_expanded);
-            ++num_plans;
-            output(plan);
+            changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
+            if(!changes.empty()){
+                plan=plannerAstar(robot_map,x_size,y_size,current_node,goal_node,total_time,total_expanded);
+                ++num_plans;
+                output(plan);
+                current_plan_idx = 1;
+            }
 
             // std::cout<<"x: "<<current_node.x<<" y: "<<current_node.y<<"\n";
         }
         cout<<"\ngoal reached!!\n";
         cout<<"number of steps: "<<num_steps<<"\n";
+        cout<<"total time: "<< total_time<<"\n";
         cout<<"average planning time: "<< total_time/(double)num_plans << " ms\n";
         cout<<"number of plans generated: "<<num_plans<<"\n";
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
@@ -540,7 +545,7 @@ int main(int argc, char** argv)
         ++num_plans;
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){ 
             if (abs(current_node.x-plan[current_plan_idx].first)<=1 && abs(current_node.y-plan[current_plan_idx].second)<=1 ){
-                cout<<"moving with plan idx "<<current_plan_idx<<"\n";
+                //cout<<"moving with plan idx "<<current_plan_idx<<"\n";
                 current_node.x=plan[current_plan_idx].first;
                 current_node.y=plan[current_plan_idx].second;
                 ++current_plan_idx;
@@ -571,6 +576,7 @@ int main(int argc, char** argv)
         }
         cout<<"\ngoal reached!!\n";
         cout<<"number of steps: "<<num_steps<<"\n";
+        cout<<"total time: "<< total_time<<"\n";
         cout<<"average planning time: "<< total_time/(double)num_plans << " ms\n";
         cout<<"number of plans generated: "<<num_plans<<"\n";
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
