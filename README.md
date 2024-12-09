@@ -1,7 +1,11 @@
-# Anytime_Dstar
+# Anytime and Incremental Algorithms for Unknown Environments
 Authors: Evan Wassmann, Trevor Stack, Jeremy Kilbride
 
-This Repository is for our final project in CMU 16-782 Robot Planning and Decision Making. For our project we implemented the Anytime D-star paper as described in the paper below.
+This Repository is for our final project in CMU 16-782 Robot Planning and Decision Making. For our project we implemented Anytime D*, Anytime Repairing A*, and D* lite for efficiently re-planning in unknown environments. References for these algorithms are below
+
+M. Likhachev, G. J. Gordon, and S. Thrun, “ARA\ast : Anytime A\ast with Provable Bounds on Sub-Optimality,” in Advances in Neural Information Processing Systems, MIT Press, 2003. Accessed: Oct. 30, 2024. [Online]. Available: https://proceedings.neurips.cc/paper_files/paper/2003/hash/ee8fe9093fbbb687bef15a38facc44d2-Abstract.html
+
+Koenig, Sven & Likhachev, Maxim. (2002). D*Lite.. Proceedings of the National Conference on Artificial Intelligence. 476-483. 
 
 Likhachev, Maxim & Ferguson, David & Gordon, Geoffrey & Stentz, Anthony & Thrun, Sebastian. (2005). Anytime Dynamic A*: An Anytime, Replanning Algorithm.. Proceedings of the International Conference on Automated Planning and Scheduling (ICAPS). 262-271. 
 
