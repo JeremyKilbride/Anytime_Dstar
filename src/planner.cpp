@@ -427,6 +427,7 @@ int main(int argc, char** argv)
             robot_map[idx]=0;
         }
     }
+    //make more variables necessary for solving the problem or tracking statistics
     Node current_node(start_node.x,start_node.y);
     std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
     Graph graph(x_size,y_size);
