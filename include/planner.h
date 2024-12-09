@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <iostream>
 #include <queue>
 #include <limits>
@@ -28,8 +29,11 @@ struct Node
     int x;
     int y;
     double g=std::numeric_limits<double>::max();
-    double h=std::numeric_limits<double>::max();
-    double v=std::numeric_limits<double>::max();
+    double h=0;
+    double rhs=std::numeric_limits<double>::max();
+    double km=0;
+    std::pair<double,double> key;
+    bool is_goal=false;
     int parent_idx=-1;
     
 
@@ -39,10 +43,9 @@ struct Node
 
     Node(){}
 
-    void compute_h(int gx, int gy){//TODO:update this
-        this->h=0;
-        this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
-
+    void compute_h(int gx, int gy){
+        this->h= std::max(abs(gx - this->x),abs((gy-this->y)));
+        // this->h=0;
     }
   
     Node operator=(const Node& incoming){
@@ -50,7 +53,10 @@ struct Node
         this->y=incoming.y;
         this->g=incoming.g;
         this->h=incoming.h;
-        this->v=incoming.v;
+        this->rhs=incoming.rhs;
+        this->km=incoming.km;
+        this->key=incoming.key;
+        this->is_goal=incoming.is_goal;
         this->parent_idx=incoming.parent_idx;
         return *this;
     }
@@ -72,13 +78,22 @@ class Graph
         int x_size;
         int y_size;
         int start_idx=-1;
+    public:
+        double km=0;
         int goal_x=-1;
         int goal_y=-1;
-    public:
+
         Graph(int x_size, int y_size):x_size(x_size),y_size(y_size){
             nodeMap.reserve(x_size*y_size);
         }
-    
+
+        void calculate_node_key(Node& s){
+            double min=std::min(s.g,s.rhs);
+            s.key.second=min;
+            s.compute_h(this->goal_x,this->goal_y);
+            s.key.first=min+s.h+this->km;
+        }
+
         void set_start(int s){this->start_idx=s;}
 
         void set_goal(int gx, int gy){
@@ -88,12 +103,15 @@ class Graph
     
         void addNode(Node& newNode){
             int idx=get_key(x_size,newNode.x,newNode.y);
+            newNode.km=this->km;
             nodeMap.emplace(idx,newNode);
         }
         
 
         void addNode(int x, int y){
             Node newNode(x,y);
+            newNode.compute_h(goal_x,goal_y);
+            newNode.km=this->km;
             nodeMap.emplace(get_key(x_size,newNode.x,newNode.y),newNode);
         }
 
@@ -138,7 +156,8 @@ class Graph
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
-                return std::make_shared<Node>(it->second);
+                Node ret=it->second;
+                return std::make_shared<Node>(ret);
             }
         }
         std::shared_ptr<Node> get(int x, int y){
@@ -146,10 +165,27 @@ class Graph
             if(it==nodeMap.end()){
                 return nullptr;
             }else{
-                return std::make_shared<Node>(it->second);
+                Node ret=it->second;
+                return std::make_shared<Node>(ret);
             }
         }
 
+        Node calculate_start_key(){
+            NodePtr start_ptr = this->get(this->start_idx);
+            this->calculate_node_key(*start_ptr);
+            this->set(*start_ptr);
+            return *start_ptr;
+        }
+
+        NodePtr get(int idx){
+            auto it = nodeMap.find(idx);
+            if (it==nodeMap.end()){
+                return nullptr;
+            }else{
+                Node ret=it->second;
+                return std::make_shared<Node>(ret);
+            }
+        }
 
         void print()
         {
@@ -158,28 +194,20 @@ class Graph
             }
         }
 
-        std::shared_ptr<Node> get(int idx){
-            auto it = nodeMap.find(idx);
-            if(it==nodeMap.end()){
-                return nullptr;
-            }
-            else
-                return std::make_shared<Node>(it->second);
-        }
-
 };
 
 
 
 
-std::unordered_set<int> update_map(int*& current,int* global, int x_size, int y_size, int robotposeX, int robotposeY, int sensing_range){
+std::unordered_set<int> update_map(int* current,int* global, int x_size, int y_size, int robotposeX, int robotposeY,int sensor_range){
     std::unordered_set<int> cell_changes;
-    
+    cout<<"updating map for robot position "<<robotposeX<<", "<<robotposeY<<"\n";
     for(int i =0; i< x_size;i++){
         for(int j=0; j<y_size;j++){
-            if(i>robotposeX-sensing_range && i<robotposeX+sensing_range){
-                if(j>robotposeY-sensing_range && j<robotposeY+sensing_range){
+            if(i>=robotposeX-sensor_range && i<=robotposeX+sensor_range){
+                if(j>=robotposeY-sensor_range&& j<=robotposeY+sensor_range){
                     if(current[get_key(x_size,i,j)] != global[get_key(x_size,i,j)]){
+                        cout<<"adding "<<i<<", "<<j<<"to changes\n";
                         current[get_key(x_size,i,j)] = global[get_key(x_size,i,j)];
                         cell_changes.insert(get_key(x_size,i,j));
                     }
@@ -187,8 +215,8 @@ std::unordered_set<int> update_map(int*& current,int* global, int x_size, int y_
                 }
             }
         }
-
     }
+
     return cell_changes;
 }
 
@@ -266,6 +294,7 @@ bool read_map(std::string map_name, int*& map, int& x_size, int& y_size, Node& s
             if (j != y_size-1) ss.ignore();
         }
     }
+
     myfile.close();
     return true;
 

@@ -1,3 +1,0 @@
-/home/wassmann/code/Anytime_Dstar/build/CMakeFiles/planner.dir
-/home/wassmann/code/Anytime_Dstar/build/CMakeFiles/edit_cache.dir
-/home/wassmann/code/Anytime_Dstar/build/CMakeFiles/rebuild_cache.dir

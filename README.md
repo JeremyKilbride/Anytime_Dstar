@@ -26,3 +26,8 @@ In the terminal, navigate to the top directory for this project and build with `
 
 ##
 Maps generated using code from this repo https://github.com/dcaffo98/path-planning-cnn
+
+### Sensor Code Explained - Trevor
+
+link:
+https://www.dropbox.com/scl/fi/jyzpkod0nezagdnlnw4kx/Sensor_Code_explained-Made-with-Clipchamp_1732822912775.mp4?rlkey=lxnvx3aj93zlnquhwwq1oep9o&st=cg3eo9l0&dl=0
