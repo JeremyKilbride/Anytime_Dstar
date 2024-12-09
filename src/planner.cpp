@@ -505,7 +505,12 @@ int main(int argc, char** argv)
     int num_steps=0;
     double num_plans=0;
     double total_time=0;
+    double dummy_d=0;
+    int dummy_i=0;
     int total_expanded=0;
+    std::vector<std::pair<int,int>> optimal_plan;
+    optimal_plan=plannerAstar(global_map,x_size,y_size,current_node,goal_node,dummy_d,dummy_i);
+
 
     switch (which)
     {
@@ -535,6 +540,7 @@ int main(int argc, char** argv)
         cout<<"average planning time: "<< total_time/(double)num_plans << " ms\n";
         cout<<"number of plans generated: "<<num_plans<<"\n";
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
+        cout<<"optimal number of steps: "<<optimal_plan.size()-1<<"\n";
 
         break;
     case planner::DSTAR_LITE:
@@ -580,6 +586,8 @@ int main(int argc, char** argv)
         cout<<"average planning time: "<< total_time/(double)num_plans << " ms\n";
         cout<<"number of plans generated: "<<num_plans<<"\n";
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
+        cout<<"optimal number of steps: "<<optimal_plan.size()-1<<"\n";
+
         break;
     case planner::ANYTIME_DSTAR:
         plannerAnytimeDstar();
