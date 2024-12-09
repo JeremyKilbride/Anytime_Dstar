@@ -210,8 +210,7 @@ std::unordered_set<int> update_map(int* current,int* global, int x_size, int y_s
                         cout<<"adding "<<i<<", "<<j<<"to changes\n";
                         current[get_key(x_size,i,j)] = global[get_key(x_size,i,j)];
                         cell_changes.insert(get_key(x_size,i,j));
-                    }
-                    
+                    }    
                 }
             }
         }

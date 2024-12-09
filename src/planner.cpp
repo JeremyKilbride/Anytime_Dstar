@@ -142,7 +142,7 @@ struct CompareNode {
 
 
 
-std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, Node start, Node goal)
+std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, Node start, Node goal,double& total_time, int& total_expanded)
 {
     int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
@@ -243,6 +243,8 @@ std::vector<std::pair<int,int>> plannerAstar(int* map, int x_size, int y_size, N
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+    total_time+=(double)planner_time.count()/1000;
+    total_expanded+=states_expanded;
     return plan;
 }
 
@@ -510,13 +512,21 @@ int main(int argc, char** argv)
     case planner::ASTAR:
         // cout<<"sensing rang"<<sensing_range;
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){
-            plan=plannerAstar(robot_map,x_size,y_size,current_node,goal_node);
+            plan=plannerAstar(robot_map,x_size,y_size,current_node,goal_node,total_time,total_expanded);
+            ++num_plans;
             changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
             output(plan);
             current_node.x=plan[1].first;
             current_node.y=plan[1].second;
+            ++num_steps;
             // std::cout<<"x: "<<current_node.x<<" y: "<<current_node.y<<"\n";
         }
+        cout<<"\ngoal reached!!\n";
+        cout<<"number of steps: "<<num_steps<<"\n";
+        cout<<"average planning time: "<< total_time/(double)num_plans << " ms\n";
+        cout<<"number of plans generated: "<<num_plans<<"\n";
+        cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
+
         break;
     case planner::DSTAR_LITE:
         cout<<"using D* Lite planner\n";
