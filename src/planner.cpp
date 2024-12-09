@@ -129,9 +129,8 @@ bool operator< (Node& lhs,Node& rhs)
 
 
 double computeHeuristic(Node current, Node goal_node){
-    // return sqrt((goal_node.x - current.x)*(goal_node.x-current.x)+(goal_node.y-current.y)*(goal_node.y-current.y));
-    // return std::max(abs(goal_node.x - current.x),abs((goal_node.y-current.y)));
-    return 0;
+    return std::max(abs(goal_node.x - current.x),abs((goal_node.y-current.y)));
+    // return 0;
 };
 
 
@@ -277,11 +276,12 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
     std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
     std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
-    std::unordered_map<int, Node> closed_list;
     static bool first_time=true; 
     int start_idx= get_key(x_size,start.x, start.y);
     int goal_idx= get_key(x_size,goal.x, goal.y);
     start.compute_h(start.x,start.y);
+    g.set_goal(start.x,start.y);
+    g.addNode(start);
     if (first_time){
         goal.rhs=0;
         g.calculate_node_key(goal);
@@ -290,9 +290,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         g.addNode(goal);
         first_time=false;
     }
-    g.addNode(start);
     g.set_start(start_idx);
-    g.set_goal(start.x,start.y);
     int num_expanded=0;
     bool expanded_start=false;
     cout<<"open list size: "<<open_list.size()<<"\n";
@@ -308,7 +306,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         Node copy_new_km=state;
         g.calculate_node_key(copy_new_km);
         if(state<copy_new_km){
-            copy_new_km.compute_h(start.x,start.y);
+            // copy_new_km.compute_h(start.x,start.y);
             // cout<<"adding copy with new km to open\n";
             g.set(copy_new_km);
             open_list.emplace(copy_new_km);
@@ -338,31 +336,15 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
                 update_node(g,successor,x_size,y_size,map,open_list);
             }
         }
-
-        //debug code
-        // if (num_expanded>50){
-        //     return plan;
-        // }
     }
 
     cout<<"\nfinished D* lite\n"<<"number of states expanded: "<<num_expanded<<"\nbeginning back track\n";
     cout<<"goal node, g "<<g.get(goal_idx)->g<<" ,rhs "<<g.get(goal_idx)->rhs<<"\n";
     int current_idx=start_idx;
-    int _c=0;
     while(current_idx!=goal_idx){
         NodePtr _current_state_ptr=g.get(current_idx);
         current_idx=get_best_neighbor_idx(g,*_current_state_ptr,map,x_size,y_size);
         plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
-        // cout<<" start is "<<start.x<<", "<<start.y<<"\n";
-        // cout<<"added "<<_current_state_ptr->x <<", "<<_current_state_ptr->y<<" to plan\n";
-        // cout<<"with g:"<<_current_state_ptr->g<<"\n";
-        // cout<<"and h value: "<<_current_state_ptr->h<<"\n";
-        // cout<<"and rhs value: "<<_current_state_ptr->rhs<<"\n";
-        // cout<<"and map value: "<< map[get_key(x_size,_current_state_ptr->x,_current_state_ptr->y)]<<"\n";
-        // if (_c>12){
-        //     break;
-        // }
-        ++_c;
     }
     NodePtr _current_state_ptr=g.get(current_idx);
     plan.emplace_back(_current_state_ptr->x,_current_state_ptr->y);
@@ -468,15 +450,6 @@ int main(int argc, char** argv)
     int current_plan_idx=1;
     std::set<Node, std::less<Node>> _open;
     Node last_replan_node=current_node;
-    //debug code
-    // cout<<"got map:\n";
-    // for (int x=0;x<x_size;++x){
-    //     for (int y=0;y<y_size;++y){
-    //         int val=global_map[get_key(x_size,x,y)];
-    //         cout<<val<<",";
-    //     }
-    //     cout<<"\n";
-    // }
 
 
     switch (which)
@@ -491,12 +464,11 @@ int main(int argc, char** argv)
         std::cout << "\n"<< "y_size: " << y_size << "\n";
         plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open);
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){ 
-            if (abs(current_node.x-plan[1].first)<=1 && abs(current_node.y-plan[1].second)<=1 ){
+            if (abs(current_node.x-plan[current_plan_idx].first)<=1 && abs(current_node.y-plan[current_plan_idx].second)<=1 ){
                 cout<<"moving with plan idx "<<current_plan_idx<<"\n";
-                current_node.x=plan[1].first;
-                current_node.y=plan[1].second;
-                graph.km+=computeHeuristic(last_replan_node,current_node);
-                last_replan_node=current_node;
+                current_node.x=plan[current_plan_idx].first;
+                current_node.y=plan[current_plan_idx].second;
+                ++current_plan_idx;
             }else{
                 cout<<"invalid move, exiting\n";
                 cout<<"current plan idx "<<current_plan_idx<<"\n";
@@ -506,16 +478,18 @@ int main(int argc, char** argv)
             }     
             int current_idx=get_key(x_size,current_node.x,current_node.y);
             std::unordered_set<int> changes=update_map(robot_map,global_map,x_size,y_size,current_node.x,current_node.y,sensing_range);
-            //update changed nodes
-            for(int change_idx: changes){
-                NodePtr ptr_changed=graph.getAddNode(change_idx);
-                update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open);
-            }
-            //plan
-            plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open);
-            //move
-            //get map changes
-              
+            if (!changes.empty()){
+                //update changed nodes
+                for(int change_idx: changes){
+                    NodePtr ptr_changed=graph.getAddNode(change_idx);
+                    update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open);
+                }
+                graph.km+=computeHeuristic(last_replan_node,current_node);
+                last_replan_node=current_node;
+                //plan
+                plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open);
+                current_plan_idx=1;
+            }      
         }
         cout<<"goal reached!!\n";
         break;

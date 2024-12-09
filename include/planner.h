@@ -43,9 +43,8 @@ struct Node
     Node(){}
 
     void compute_h(int gx, int gy){
-        // this-> h= sqrt((gx - this->x)*(gx-this->x)+(gy-this->y)*(gy-this->y));
-        // this->h= std::max(abs(gx - this->x),abs((gy-this->y)));
-        this->h=0;
+        this->h= std::max(abs(gx - this->x),abs((gy-this->y)));
+        // this->h=0;
     }
 
     Node operator=(const Node& incoming){
@@ -89,10 +88,9 @@ class Graph
 
         void calculate_node_key(Node& s){
             double min=std::min(s.g,s.rhs);
-            s.km=this->km;
             s.key.second=min;
             s.compute_h(this->goal_x,this->goal_y);
-            s.key.first=min+s.h+s.km;
+            s.key.first=min+s.h+this->km;
         }
 
         void set_start(int s){this->start_idx=s;}
@@ -104,6 +102,7 @@ class Graph
     
         void addNode(Node& newNode){
             int idx=get_key(x_size,newNode.x,newNode.y);
+            newNode.km=this->km;
             nodeMap.emplace(idx,newNode);
         }
         
