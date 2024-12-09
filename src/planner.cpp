@@ -261,7 +261,7 @@ int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
     return best_idx;
 }
 
-std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal,Graph& g, std::set<Node, std::less<Node>>& open_list)
+std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal,Graph& g, std::set<Node, std::less<Node>>& open_list, double& total_time, int& total_expanded)
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
@@ -335,6 +335,8 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
     std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
     cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
+    total_time+=(double)planner_time.count()/1000;
+    total_expanded+=num_expanded;
     return plan;
 }
 
@@ -432,7 +434,10 @@ int main(int argc, char** argv)
     int current_plan_idx=1;
     std::set<Node, std::less<Node>> _open;
     Node last_replan_node=current_node;
-
+    int num_steps=0;
+    double num_plans=0;
+    double total_time=0;
+    int total_expanded=0;
 
     switch (which)
     {
@@ -443,13 +448,15 @@ int main(int argc, char** argv)
         cout<<"using D* Lite planner\n";
         std::cout << "\n"<< "x_size: " << x_size << "\n";
         std::cout << "\n"<< "y_size: " << y_size << "\n";
-        plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open);
+        plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,total_time,total_expanded);
+        ++num_plans;
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){ 
             if (abs(current_node.x-plan[current_plan_idx].first)<=1 && abs(current_node.y-plan[current_plan_idx].second)<=1 ){
                 cout<<"moving with plan idx "<<current_plan_idx<<"\n";
                 current_node.x=plan[current_plan_idx].first;
                 current_node.y=plan[current_plan_idx].second;
                 ++current_plan_idx;
+                ++num_steps;
             }else{
                 cout<<"invalid move, exiting\n";
                 cout<<"current plan idx "<<current_plan_idx<<"\n";
@@ -468,11 +475,16 @@ int main(int argc, char** argv)
                 graph.km+=computeHeuristic(last_replan_node,current_node);
                 last_replan_node=current_node;
                 //replan
-                plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open);
+                plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,total_time,total_expanded);
+                ++num_plans;
                 current_plan_idx=1;
             }      
         }
-        cout<<"goal reached!!\n";
+        cout<<"\ngoal reached!!\n";
+        cout<<"number of steps: "<<num_steps<<"\n";
+        cout<<"average planning time: "<< total_time/(double)num_plans << " ms\n";
+        cout<<"number of plans generated: "<<num_plans<<"\n";
+        cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
         break;
     case planner::ANYTIME_DSTAR:
         plannerAnytimeDstar();
