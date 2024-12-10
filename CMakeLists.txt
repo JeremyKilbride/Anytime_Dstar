@@ -16,7 +16,7 @@ include_directories(include)
 
 # Add the main executable.
 add_executable(planner
-        src/planner.cpp src/planner_ARA.cpp)
+        src/planner.cpp src/planner_ARA.cpp src/runtest_ARA.cpp)
 
 # Define the absolute path to relevant directories.
 target_compile_definitions(planner PRIVATE MAPS_DIR="${CMAKE_SOURCE_DIR}/maps")

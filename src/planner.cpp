@@ -555,6 +555,7 @@ int main(int argc, char** argv)
         std::cout << "\n"<< "x_size: " << x_size << "\n";
         std::cout << "\n"<< "y_size: " << y_size << "\n";
         plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,total_time,total_expanded);
+        output(plan);
         ++num_plans;
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){ 
             if (abs(current_node.x-plan[current_plan_idx].first)<=1 && abs(current_node.y-plan[current_plan_idx].second)<=1 ){
