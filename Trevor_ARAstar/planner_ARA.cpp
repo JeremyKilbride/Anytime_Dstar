@@ -35,7 +35,7 @@ int dY[NUMOFDIRS] = { -1,  0,  1, -1,  1, -1, 0, 1 };
 
 struct RobotState {
     
-    static double epsilon;
+    
 
     // Info needed to initialize state
     std::pair<int, int> xyloc; // (x, y) location of the state
@@ -47,7 +47,7 @@ struct RobotState {
     double h_val;
     double v_val;
 
-    RobotState(std::pair<int, int> xyloc_, int* robot_map, int x_size, int y_size, int robotposeX, int robotposeY, std::shared_ptr<RobotState> parent_state_ = nullptr)
+    RobotState(std::pair<int, int> xyloc_, int* robot_map, int x_size, int y_size, int robotposeX, int robotposeY, double epsilon, std::shared_ptr<RobotState> parent_state_ = nullptr)
         : xyloc(xyloc_), parent_state(parent_state_) {
         transition_cost = robot_map[GETMAPINDEX(xyloc.first, xyloc.second, x_size, y_size)];
         if (parent_state != nullptr) {
@@ -57,16 +57,17 @@ struct RobotState {
             g_val = 0.0;
         }
 
-       // h_val = sqrt(2.0) * MIN(abs(xyloc.first - robotposeX), abs(xyloc.second - robotposeY)) +
-         //   MAX(abs(xyloc.first - robotposeX), abs(xyloc.second - robotposeY)) -
-           // MIN(abs(xyloc.first - robotposeX), abs(xyloc.second - robotposeY));
-        h_val= MAX(abs(robotposeX - xyloc.first), abs(robotposeY - xyloc.second));
+       h_val = sqrt(2.0) * MIN(abs(xyloc.first - robotposeX), abs(xyloc.second - robotposeY)) +
+            MAX(abs(xyloc.first - robotposeX), abs(xyloc.second - robotposeY)) -
+            MIN(abs(xyloc.first - robotposeX), abs(xyloc.second - robotposeY));
+        //h_val= MAX(abs(robotposeX - xyloc.first), abs(robotposeY - xyloc.second));
 
-        update_f_val();
+        update_f_val(epsilon);
         v_val = std::numeric_limits<double>::infinity();
     }
 
-    void update_f_val() {
+    void update_f_val(double epsilon) 
+    {
         f_val = g_val + epsilon * h_val;
     }
 
@@ -76,10 +77,10 @@ struct RobotState {
 };
 
 
-double RobotState::epsilon = 10.0; 
 
 struct CompareRobotState {
-    bool operator()(const std::shared_ptr<RobotState>& lhs, const std::shared_ptr<RobotState>& rhs) const {
+    bool operator()(const std::shared_ptr<RobotState>& lhs, const std::shared_ptr<RobotState>& rhs) const 
+    {
         return lhs->f_val > rhs->f_val;
     }
 };
@@ -148,7 +149,8 @@ std::shared_ptr<RobotState> Get_Goal_State(
     int* target_traj,
     const int targetposeX,
     const int targetposeY,
-    const int curr_time)
+    const int curr_time,
+    const double epsilon)
 {
     bool goal_found = false;
     for (int i = 0; i <= (target_steps - 1 - curr_time); i++) {
@@ -158,7 +160,7 @@ std::shared_ptr<RobotState> Get_Goal_State(
         int robot_movetime = i;
 
         if (robot_movetime >= min_steps_togoal) { // If it's possible to meet the target along its trajectory at time step
-            std::shared_ptr<RobotState> new_GS = std::make_shared<RobotState>(std::make_pair(goalposeX_poss, goalposeY_poss), robot_map, x_size, y_size, robotposeX, robotposeY);
+            std::shared_ptr<RobotState> new_GS = std::make_shared<RobotState>(std::make_pair(goalposeX_poss, goalposeY_poss), robot_map, x_size, y_size, robotposeX, robotposeY,epsilon);
             goal_found = true;
             return new_GS;
         }
@@ -169,7 +171,7 @@ std::shared_ptr<RobotState> Get_Goal_State(
 }
 
 void Compute_Initial_Path(
-    std::vector<std::shared_ptr<RobotState>>& open_list,
+    std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState>& open_list ,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& closed_list,
     int* robot_map,
     const int collision_thresh,
@@ -180,25 +182,26 @@ void Compute_Initial_Path(
     const int curr_time,
     std::vector<std::pair<int, int>>& Best_Path,
     const std::shared_ptr<RobotState> GoalState,
-    std::shared_ptr<RobotState>&StartState
+    std::shared_ptr<RobotState>&StartState,
+    const double epsilon
 )
 {
-    std::cout << "Computing Initial Path " << std::endl;
+    
     int states_expanded = 0;
     std::pair<int, int> start_pos = std::make_pair(robotposeX, robotposeY);
-    open_list.push_back(GoalState);
-    std::push_heap(open_list.begin(), open_list.end(), CompareRobotState());
+    open_list.push(GoalState);
+    
 
     bool valid_path = false;
     while (!open_list.empty()) 
     {
         
-        std::shared_ptr<RobotState> RS_expand = open_list.front();
+        std::shared_ptr<RobotState> RS_expand = open_list.top();
+        open_list.pop();
 
         auto it = closed_list.find(RS_expand->xyloc);
         if (it != closed_list.end()) {
-            std::pop_heap(open_list.begin(), open_list.end(), CompareRobotState());
-            open_list.pop_back();
+            
             continue;
         }
 
@@ -209,7 +212,9 @@ void Compute_Initial_Path(
                 Best_Path.push_back(RS_expand->xyloc);
                 RS_expand = RS_expand->parent_state;
             }
-            std::cout << "Initial Path Constructed, States Expanded: "<<states_expanded <<", Epsilon= "<< RobotState::epsilon<< std::endl;
+            std::cout << "Initial Path Constructed, States Expanded: "<<states_expanded <<", Epsilon= "<< epsilon<< std::endl;
+            
+            
             
             break;
         }
@@ -224,19 +229,17 @@ void Compute_Initial_Path(
             if (closed_list.find(neighbor_key) != closed_list.end()) {
                 continue;
             }
-            std::shared_ptr<RobotState> RS_candidate = std::make_shared<RobotState>(std::make_pair(newx, newy), robot_map, x_size, y_size, robotposeX, robotposeY, RS_expand);
+            std::shared_ptr<RobotState> RS_candidate = std::make_shared<RobotState>(std::make_pair(newx, newy), robot_map, x_size, y_size, robotposeX, robotposeY,epsilon, RS_expand);
 
             if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size) { // If on map
-                if ((RS_candidate->transition_cost >= 0) && (RS_candidate->transition_cost < collision_thresh)) { // If not an obstacle
-                    open_list.push_back(RS_candidate);
-                    std::push_heap(open_list.begin(), open_list.end(), CompareRobotState());
+                if ((RS_candidate->transition_cost >= 0) && (RS_candidate->transition_cost < collision_thresh)) 
+                { // If not an obstacle
+                    open_list.push(RS_candidate);
                 }
             }
         }
         RS_expand->v_val = RS_expand->g_val;
         states_expanded++;
-        std::pop_heap(open_list.begin(), open_list.end(), CompareRobotState());
-        open_list.pop_back();
         closed_list[RS_expand->xyloc] = RS_expand;
     }
     // Reverse A* search complete or no path found
@@ -248,26 +251,33 @@ void Compute_Initial_Path(
     }
 }
 
-void update_fvals(std::vector<std::shared_ptr<RobotState>>& open_list,
+void update_fvals(std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState> &open_list,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& closed_list,
     const double new_epsilon)
 {
-    RobotState::epsilon = new_epsilon;
-    for (auto& state : open_list) 
-    {
-        state->update_f_val();
-    }
-    std::make_heap(open_list.begin(), open_list.end(), CompareRobotState());
-
+    
+    
+   
     for (auto& pair : closed_list)
     {
-        pair.second->update_f_val(); 
+        
+        pair.second->update_f_val(new_epsilon); 
     }
-    
+
+    std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState> new_open_list;
+    while (!open_list.empty())
+    {
+        std::shared_ptr<RobotState> RS = open_list.top();
+        open_list.pop();
+        RS->update_f_val(new_epsilon);
+        new_open_list.push(RS);
+        
+    }
+    open_list = new_open_list;
 }
 
 void Improve_Path_with_Reuse(
-    std::vector<std::shared_ptr<RobotState>> &open_list,
+    std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState>& open_list,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& closed_list,
     int* robot_map,
     const int collision_thresh,
@@ -284,9 +294,19 @@ void Improve_Path_with_Reuse(
     )
 {
     std::pair<int, int> start_pos = std::make_pair(robotposeX, robotposeY);
-    
+    std::vector<std::shared_ptr<RobotState>>INCONS_list;
     for (double epsilon : all_epsilons)
     {
+        
+        if (!INCONS_list.empty())
+        {
+            for (std::shared_ptr<RobotState>inc_state : INCONS_list)
+            {
+                open_list.push(inc_state);
+            }
+        }
+        INCONS_list.clear();
+        closed_list.clear();
         int states_expanded = 0;
         std::vector<std::pair<int, int>>New_Path;
         auto planning_current_time = std::chrono::high_resolution_clock::now();
@@ -298,7 +318,7 @@ void Improve_Path_with_Reuse(
 
         update_fvals(open_list, closed_list, epsilon);
 
-        while (StartState->f_val> open_list.front()->f_val)
+        while (StartState->f_val> open_list.top()->f_val)
         {
             auto planning_current_time = std::chrono::high_resolution_clock::now();
             auto planning_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(planning_current_time - planning_start_time);
@@ -307,13 +327,12 @@ void Improve_Path_with_Reuse(
                 return;
             }
 
-            std::shared_ptr<RobotState> RS_expand = open_list.front();
+            std::shared_ptr<RobotState> RS_expand = open_list.top();
+            open_list.pop();
 
             auto it = closed_list.find(RS_expand->xyloc);
             if (it != closed_list.end()) 
             {
-                std::pop_heap(open_list.begin(), open_list.end(), CompareRobotState());
-                open_list.pop_back();
                 continue;
             }
             if (RS_expand->xyloc == start_pos) 
@@ -340,14 +359,14 @@ void Improve_Path_with_Reuse(
                     {
                         std::pair<int, int> neighbor_key = std::make_pair(newx, newy);
                         auto it = closed_list.find(neighbor_key);
-                        std::shared_ptr<RobotState> RS_candidate = std::make_shared<RobotState>(neighbor_key, robot_map, x_size, y_size, robotposeX, robotposeY, RS_expand);
+                        std::shared_ptr<RobotState> RS_candidate = std::make_shared<RobotState>(neighbor_key, robot_map, x_size, y_size, robotposeX, robotposeY, epsilon, RS_expand);
                         if (it != closed_list.end())
                         {
                             if (RS_candidate->f_val < it->second->f_val)
                             {
-                                closed_list.erase(it);
-                                open_list.push_back(RS_candidate);
-                                std::push_heap(open_list.begin(), open_list.end(), CompareRobotState());
+                                
+                                INCONS_list.push_back(RS_candidate);
+                            
                                 continue;
 
                             }
@@ -356,8 +375,7 @@ void Improve_Path_with_Reuse(
                                 continue;
                             }
                         }
-                        open_list.push_back(RS_candidate);
-                        std::push_heap(open_list.begin(), open_list.end(), CompareRobotState());
+                        open_list.push(RS_candidate);
 
                     }
 
@@ -365,8 +383,6 @@ void Improve_Path_with_Reuse(
             }
             RS_expand->v_val = RS_expand->g_val;
             states_expanded++;
-            std::pop_heap(open_list.begin(), open_list.end(), CompareRobotState());
-            open_list.pop_back();
             closed_list[RS_expand->xyloc] = RS_expand;
         }
         std::shared_ptr<RobotState>nxt_state = StartState;
@@ -400,16 +416,25 @@ void planner(
     int curr_time,
     int* action_ptr)
 {
-    double planning_time_limit = 990.0; //milliseconds
+    double initial_epsilon = 50.0;
+    std::vector<double> all_epsilons = { 5.0, 2.0,1.5,1.2, 1.0 };
+    static double planning_time_limit;
+    if (curr_time == 0)
+    {
+        std::cout << "Enter Planning Time Constraint (ms): ";
+        std::cin >> planning_time_limit;
+    }
+    
+    //double planning_time_limit = 990.0; //milliseconds
     auto planning_start_time = std::chrono::high_resolution_clock::now();
 
     std::vector<std::pair<int, int>> Best_Path;
     int robot_moves = 0;
     static int* robot_map = new int[x_size * y_size];
-    std::vector<double> all_epsilons = { 10.0,5.0, 3.0, 1.0 };
+    
     static std::shared_ptr<RobotState> GoalState;
     if (curr_time == 0) {
-        GoalState = Get_Goal_State(robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, target_steps, target_traj, targetposeX, targetposeY, curr_time);
+        GoalState = Get_Goal_State(robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, target_steps, target_traj, targetposeX, targetposeY, curr_time, initial_epsilon);
         if (!GoalState) 
         {
             std::cout << "Error: Goal State is null." << std::endl;
@@ -419,15 +444,13 @@ void planner(
     std::vector<std::pair<int, int>> robot_map_changes = updaterobotmap_and_getchanges(robot_map, sensing_data, SENSING_RANGE, robotposeX, robotposeY, x_size, y_size, curr_time);
 
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash> closed_list;
-    std::vector<std::shared_ptr<RobotState>> open_list;
+    std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState> open_list;
     static std::shared_ptr<RobotState> StartState=nullptr;
     Compute_Initial_Path(open_list, closed_list, robot_map, collision_thresh, x_size, y_size, robotposeX,
-        robotposeY, curr_time, Best_Path, GoalState,StartState);
+        robotposeY, curr_time, Best_Path, GoalState,StartState,initial_epsilon);
 
     auto planning_current_time = std::chrono::high_resolution_clock::now();
     auto planning_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(planning_current_time - planning_start_time);
-
-    all_epsilons.erase(all_epsilons.begin());//remove the first epsilon from the vector
 
     if (planning_elapsed_time.count() < planning_time_limit)
     {
