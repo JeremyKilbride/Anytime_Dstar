@@ -35,9 +35,9 @@ Both of these scripts will build the code, move the executable to the top level 
 In the top level directory simply give the command `make` to compile the program. To compile in debug mode give the command `make debug`. This will compile without any build artifacts.
 
 ### Windows (Method 3: Compiling Manually)
-****UPDATE THIS.
+Open the developer command prompt, navigate to the top level directory, and enter the command `cl /EHsc /I include /O2 src\planner.cpp src\planner_ARA.cpp`
 ### Linux/WSL (Method 3: Compiling Manually)
-****UPDATE THIS.
+In the top level directory enter the command `g++ -o planner -I./include -O3 src/planner.cpp src/planner_ARA.cpp`
 
 ##
 Maps were created by the authors or adapted from homework 1 of CMU course 16782. 
