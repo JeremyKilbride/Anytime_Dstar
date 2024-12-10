@@ -1,7 +1,7 @@
-#ifndef PLANNING_PROJECT_BEST_ANYTIME_H
-#define PLANNING_PROJECT_BEST_ANYTIME_H
+#ifndef PLANNING_PROJECT_ARA_STAR_H
+#define PLANNING_PROJECT_ARA_STAR_H
 
-void plannerADstar(
+void plannerARA(
     int* sensing_data, // Local map
     int SENSING_RANGE,
     int collision_thresh,
