@@ -12,7 +12,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "planner_ARA.h"
+#include "../include/planner_ARA.h"
 
 #ifndef MAPS_DIR
 #define MAPS_DIR "maps"
@@ -221,8 +221,8 @@ int runtest_ARA(int argc, char *argv[])
         if (newrobotposeX == robotposeX && newrobotposeY == robotposeY)
             numofmoves -= 1;
         
-        if (curr_time + movetime >= target_steps)
-            break;
+        // if (curr_time + movetime >= target_steps)
+        //     break;
         
         curr_time = curr_time + movetime;
         numofmoves = numofmoves + 1;
@@ -235,8 +235,8 @@ int runtest_ARA(int argc, char *argv[])
 
         // check if target is caught
         float thresh = 0.5;
-        targetposeX = target_traj[curr_time];
-        targetposeY = target_traj[curr_time + target_steps];
+        // targetposeX = target_traj[curr_time];
+        // targetposeY = target_traj[curr_time + target_steps];
         if (abs(robotposeX - targetposeX) <= thresh && abs(robotposeY-targetposeY) <= thresh)
         {
             caught = true;

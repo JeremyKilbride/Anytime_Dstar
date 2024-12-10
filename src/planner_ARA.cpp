@@ -1,9 +1,10 @@
+
 /*=================================================================
  *
  * planner.cpp
  *
  *=================================================================*/
-#include "planner_ARA.h"
+#include "../include/planner_ARA.h"
 #include <math.h>
 #include <iostream>
 #include <vector>
@@ -138,37 +139,7 @@ std::vector<std::pair<int, int>> updaterobotmap_and_getchanges(
     return cost_change_locations;
 }
 
-std::shared_ptr<RobotState> Get_Goal_State(
-    int* robot_map,
-    const int collision_thresh,
-    const int x_size,
-    const int y_size,
-    const int robotposeX,
-    const int robotposeY,
-    const int target_steps,
-    int* target_traj,
-    const int targetposeX,
-    const int targetposeY,
-    const int curr_time,
-    const double epsilon)
-{
-    bool goal_found = false;
-    for (int i = 0; i <= (target_steps - 1 - curr_time); i++) {
-        int goalposeX_poss = target_traj[curr_time + i];
-        int goalposeY_poss = target_traj[curr_time + i + target_steps];
-        int min_steps_togoal = (int)MAX(abs(robotposeX - goalposeX_poss), abs(robotposeY - goalposeY_poss));
-        int robot_movetime = i;
 
-        if (robot_movetime >= min_steps_togoal) { // If it's possible to meet the target along its trajectory at time step
-            std::shared_ptr<RobotState> new_GS = std::make_shared<RobotState>(std::make_pair(goalposeX_poss, goalposeY_poss), robot_map, x_size, y_size, robotposeX, robotposeY,epsilon);
-            goal_found = true;
-            return new_GS;
-        }
-    }
-    if (goal_found == false) {
-        return nullptr;
-    }
-}
 
 void Compute_Initial_Path(
     std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState>& open_list ,
@@ -432,14 +403,10 @@ void planner_ARA(
     int robot_moves = 0;
     static int* robot_map = new int[x_size * y_size];
     
-    static std::shared_ptr<RobotState> GoalState;
-    if (curr_time == 0) {
-        GoalState = Get_Goal_State(robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, target_steps, target_traj, targetposeX, targetposeY, curr_time, initial_epsilon);
-        if (!GoalState) 
-        {
-            std::cout << "Error: Goal State is null." << std::endl;
-            return;
-        }
+    static std::shared_ptr<RobotState> GoalState ;
+    if (curr_time==0)
+    {
+        GoalState=std::make_shared<RobotState>(std::make_pair(targetposeX, targetposeY), robot_map, x_size, y_size, robotposeX, robotposeY,all_epsilons[0]);
     }
     std::vector<std::pair<int, int>> robot_map_changes = updaterobotmap_and_getchanges(robot_map, sensing_data, SENSING_RANGE, robotposeX, robotposeY, x_size, y_size, curr_time);
 
