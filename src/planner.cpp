@@ -393,9 +393,10 @@ void merge_sets(std::unordered_set<int>& big, std::unordered_set<int>& small,int
 }
 
 enum planner{
-    ASTAR,
-    DSTAR_LITE,
-    ANYTIME_DSTAR
+    ASTAR, // =0
+    DSTAR_LITE, // =1
+    ARA_STAR, // =2
+    ANYTIME_DSTAR // =3
 };
 
 
@@ -588,6 +589,10 @@ int main(int argc, char** argv)
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
         cout<<"optimal number of steps: "<<optimal_plan.size()-1<<"\n";
 
+        break;
+    case planner::ARA_STAR:
+        //main loop for ARA star goes here
+        cout<<"Using Anytime Repairing A* planner\n";
         break;
     case planner::ANYTIME_DSTAR:
         plannerAnytimeDstar();
