@@ -24,10 +24,20 @@ install with `sudo apt install make cmake gcc`
 ## Building
 To build our code do the following: 
 
-### Windows
+### Windows (Method 1: CMake + Build Script)
 All you need to do to build is open the developer command prompt and navigate to the top directory for this project. Then just enter the command `build.bat`.
-### Linux
+### Linux/WSL (Method 1: CMake + Build Script)
 In the terminal, navigate to the top directory for this project and build with `./build.sh`.
+
+Both of these scripts will build the code, move the executable to the top level directory, and then delete the build directory.
+
+### Linux/WSL (Method 2: Minimal MakeFile)
+In the top level directory simply give the command `make` to compile the program. To compile in debug mode give the command `make debug`. This will compile without any build artifacts.
+
+### Windows (Method 3: Compiling Manually)
+****UPDATE THIS.
+### Linux/WSL (Method 3: Compiling Manually)
+****UPDATE THIS.
 
 ##
 Maps were created by the authors or adapted from homework 1 of CMU course 16782. 
