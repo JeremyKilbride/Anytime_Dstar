@@ -1,6 +1,6 @@
 #include "planner.h"
 #include "planner_ARA.h"
-// #include "planner_best_anytime.h"
+#include "runtest_ARA.h"
 #include <iostream>
 #include <chrono>
 #include <string>
@@ -470,6 +470,11 @@ int main(int argc, char** argv)
 
     }
 
+    if(which==planner::ARA_STAR){
+        cout<<"Using Anytime repairing A* planner\n";
+        runtest_ARA(argc,argv);
+        return 0;
+    }
 
 
 
@@ -590,10 +595,6 @@ int main(int argc, char** argv)
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
         cout<<"optimal number of steps: "<<optimal_plan.size()-1<<"\n";
 
-        break;
-    case planner::ARA_STAR:
-        //main loop for ARA star goes here
-        cout<<"Using Anytime Repairing A* planner\n";
         break;
     case planner::ANYTIME_DSTAR:
         plannerAnytimeDstar();

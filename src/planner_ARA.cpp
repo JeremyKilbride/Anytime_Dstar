@@ -3,7 +3,7 @@
  * planner.cpp
  *
  *=================================================================*/
-// #include "planner_ARA.h"
+#include "planner_ARA.h"
 #include <math.h>
 #include <iostream>
 #include <vector>
@@ -401,7 +401,7 @@ void Improve_Path_with_Reuse(
 //{
 //}
 
-void plannerARA(
+void planner_ARA(
     int* sensing_data, // Local map
     int SENSING_RANGE,
     int collision_thresh,

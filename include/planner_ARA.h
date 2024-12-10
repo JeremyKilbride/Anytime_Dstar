@@ -1,7 +1,7 @@
-#ifndef PLANNING_PROJECT_ARA_STAR_H
-#define PLANNING_PROJECT_ARA_STAR_H
+#ifndef PLANNING_PROJECT_ARA_H
+#define PLANNING_PROJECT_ARA_H
 
-void plannerARA(
+void planner_ARA(
     int* sensing_data, // Local map
     int SENSING_RANGE,
     int collision_thresh,
