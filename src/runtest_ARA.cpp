@@ -131,6 +131,9 @@ int runtest_ARA(int argc, char *argv[])
     int numofmoves = 0;
     bool caught = false;
     int pathcost = 0;
+    int total_expanded=0;
+    int num_plans=0;
+    double total_time=0;
 
     std::string outputDir = OUTPUT_DIR;
     std::string outputFilePath = outputDir + "/robot_trajectory.txt";
@@ -194,7 +197,10 @@ int runtest_ARA(int argc, char *argv[])
             targetposeX, 
             targetposeY, 
             curr_time,
-            action_ptr);
+            action_ptr,
+            total_expanded,
+            total_time);
+        ++num_plans;
         newrobotposeX = action_ptr[0];
         newrobotposeY = action_ptr[1];
 
@@ -250,6 +256,10 @@ int runtest_ARA(int argc, char *argv[])
     output_file.close();
 
     std::cout << "\nRESULT" << std::endl;
+    std::cout<<"final robot position: "<<robotposeX<<", "<<robotposeY<<"\n";
+    std::cout<<"avg number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
+    std::cout<<"number of plans generated: "<<num_plans<<"\n";
+    std::cout<<"avg planning time: "<<total_time/num_plans<<" ms\n";
     std::cout << "target caught = " << caught << std::endl;
     std::cout << "time taken (s) = " << curr_time << std::endl;
     std::cout << "moves made = " << numofmoves << std::endl;
