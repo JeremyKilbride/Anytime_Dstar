@@ -142,17 +142,18 @@ int runtest_ARA(int argc, char *argv[])
     }
 
     output_file << curr_time << "," << robotposeX << "," << robotposeY << std::endl;
-    int total_expanded=0;
-    int num_plans=0;
-    double total_time=0;
-    std::cout<<"got goal position: "<<target_traj[0]<<", "<<target_traj[1]<<"\n";
+   
+    
 
     while (true)
     {
         auto start = std::chrono::high_resolution_clock::now();
 
-        targetposeX = target_traj[curr_time];
-        targetposeY = target_traj[curr_time + target_steps];
+        if (curr_time==0)
+        {
+            targetposeX = target_traj[curr_time];
+            targetposeY = target_traj[curr_time + target_steps];
+        }
 
         int min_x_sensor = std::max(1, robotposeX - SENSING_RANGE);
         int max_x_sensor = std::min(x_size, robotposeX + SENSING_RANGE);
@@ -193,14 +194,11 @@ int runtest_ARA(int argc, char *argv[])
             targetposeX, 
             targetposeY, 
             curr_time,
-            action_ptr,
-            total_expanded,
-            total_time);
-        ++num_plans;
+            action_ptr);
         newrobotposeX = action_ptr[0];
         newrobotposeY = action_ptr[1];
 
-        if (newrobotposeX < 0 || newrobotposeX > x_size || newrobotposeY < 0 || newrobotposeY > y_size)
+        if (newrobotposeX < 1 || newrobotposeX > x_size || newrobotposeY < 1 || newrobotposeY > y_size)
         {
             std::cout << "ERROR: out-of-map robot position commanded\n" << std::endl;
             return -1;
@@ -242,7 +240,7 @@ int runtest_ARA(int argc, char *argv[])
         float thresh = 0.5;
         // targetposeX = target_traj[curr_time];
         // targetposeY = target_traj[curr_time + target_steps];
-        if (robotposeX == targetposeX && robotposeY == targetposeY)
+        if (abs(robotposeX - targetposeX) <= thresh && abs(robotposeY-targetposeY) <= thresh)
         {
             caught = true;
             break;
@@ -251,12 +249,7 @@ int runtest_ARA(int argc, char *argv[])
 
     output_file.close();
 
-
     std::cout << "\nRESULT" << std::endl;
-    std::cout<<"final robot position: "<<robotposeX<<", "<<robotposeY<<"\n";
-    std::cout<<"avg number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
-    std::cout<<"number of plans generated: "<<num_plans<<"\n";
-    std::cout<<"avg planning time: "<<total_time/num_plans<<" ms\n";
     std::cout << "target caught = " << caught << std::endl;
     std::cout << "time taken (s) = " << curr_time << std::endl;
     std::cout << "moves made = " << numofmoves << std::endl;
