@@ -154,7 +154,8 @@ void Compute_Initial_Path(
     std::vector<std::pair<int, int>>& Best_Path,
     const std::shared_ptr<RobotState> GoalState,
     std::shared_ptr<RobotState>&StartState,
-    const double epsilon
+    const double epsilon,
+    int& total_expanded
 )
 {
     
@@ -183,10 +184,8 @@ void Compute_Initial_Path(
                 Best_Path.push_back(RS_expand->xyloc);
                 RS_expand = RS_expand->parent_state;
             }
-            std::cout << "Initial Path Constructed, States Expanded: "<<states_expanded <<", Epsilon= "<< epsilon<< std::endl;
-            
-            
-            
+            // std::cout << "Initial Path Constructed, States Expanded: "<<states_expanded <<", Epsilon= "<< epsilon<< std::endl;
+            total_expanded+=states_expanded;
             break;
         }
 
@@ -205,7 +204,7 @@ void Compute_Initial_Path(
             if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size) { // If on map
                 if ((RS_candidate->transition_cost >= 0) && (RS_candidate->transition_cost < collision_thresh)) 
                 { // If not an obstacle
-                    open_list.push(RS_candidate);
+                    open_list.emplace(RS_candidate);
                 }
             }
         }
@@ -216,8 +215,8 @@ void Compute_Initial_Path(
     // Reverse A* search complete or no path found
     if (valid_path == false) {
         std::cout << "No Path Found" << std::endl;
-        Best_Path.push_back(std::make_pair(robotposeX, robotposeY));
-        Best_Path.push_back(std::make_pair(robotposeX, robotposeY));
+        Best_Path.emplace_back(std::make_pair(robotposeX, robotposeY));
+        Best_Path.emplace_back(std::make_pair(robotposeX, robotposeY));
         std::cout << "Current Robot Position: " << robotposeX << " , " << robotposeY << std::endl;
     }
 }
@@ -261,7 +260,8 @@ void Improve_Path_with_Reuse(
     const std::vector<double> all_epsilons,
     const double planning_time_limit,
     const std::chrono::high_resolution_clock::time_point& planning_start_time,
-    std::vector<std::pair<int, int>>& Best_Path
+    std::vector<std::pair<int, int>>& Best_Path,
+    int& total_expanded
     )
 {
     std::pair<int, int> start_pos = std::make_pair(robotposeX, robotposeY);
@@ -363,7 +363,8 @@ void Improve_Path_with_Reuse(
             nxt_state = nxt_state->parent_state;
         }
         Best_Path = New_Path;
-        std::cout << "Path Improved, States Expanded: " << states_expanded << ", Epsilon= " << epsilon << std::endl;
+        // std::cout << "Path Improved, States Expanded: " << states_expanded << ", Epsilon= " << epsilon << std::endl;
+        total_expanded+=states_expanded;
     }
 }
 
@@ -385,7 +386,9 @@ void planner_ARA(
     int targetposeX,
     int targetposeY,
     int curr_time,
-    int* action_ptr)
+    int* action_ptr,
+    int& total_expanded,
+    double& total_time)
 {
     double initial_epsilon = 50.0;
     std::vector<double> all_epsilons = { 5.0, 2.0,1.5,1.2, 1.0 };
@@ -414,7 +417,7 @@ void planner_ARA(
     std::priority_queue<std::shared_ptr<RobotState>, std::vector<std::shared_ptr<RobotState>>, CompareRobotState> open_list;
     static std::shared_ptr<RobotState> StartState=nullptr;
     Compute_Initial_Path(open_list, closed_list, robot_map, collision_thresh, x_size, y_size, robotposeX,
-        robotposeY, curr_time, Best_Path, GoalState,StartState,initial_epsilon);
+        robotposeY, curr_time, Best_Path, GoalState,StartState,initial_epsilon, total_expanded);
 
     auto planning_current_time = std::chrono::high_resolution_clock::now();
     auto planning_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(planning_current_time - planning_start_time);
@@ -422,8 +425,11 @@ void planner_ARA(
     if (planning_elapsed_time.count() < planning_time_limit)
     {
         Improve_Path_with_Reuse(open_list, closed_list, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, curr_time, StartState, all_epsilons,
-            planning_time_limit, planning_start_time, Best_Path);
+            planning_time_limit, planning_start_time, Best_Path, total_expanded);
     }
+    auto planning_end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(planning_end_time - planning_start_time);
+    total_time+=(double)planner_time.count()/1000;
     robot_moves++;
     action_ptr[0] = Best_Path[robot_moves].first;
     action_ptr[1] = Best_Path[robot_moves].second;

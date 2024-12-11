@@ -14,6 +14,8 @@ void planner_ARA(
     int targetposeX,
     int targetposeY,
     int curr_time,
-    int* action_ptr);
+    int* action_ptr,
+    int& total_expanded,
+    double& total_time);
 
 #endif
