@@ -146,7 +146,6 @@ bool isTimeLeft(const std::chrono::high_resolution_clock::time_point &planning_s
     
     if (planning_elapsed_time.count() >= planning_time_limit)
     {
-        std::cout << "Time Elapsed" << std::endl;
         return false;
     }
     else
@@ -349,11 +348,12 @@ void ComputeorImprovePath(
     const int& targetposeX,
     const int& targetposeY,
     int &curr_epsilon_idx,
-    int &robot_moves
+    int &robot_moves,
+    bool &optimal_path
 )
 {
     std::pair<int, int> start_pos = std::make_pair(robotposeX, robotposeY);
-    if (curr_time == 0)
+    /*if (curr_time == 0)
     {
         std::cout << "Creating Initial Path" << std::endl;
     }
@@ -361,7 +361,7 @@ void ComputeorImprovePath(
     {
         std::cout << "Improving Path, Robot Location: ( " << robotposeX << " , " << robotposeY << " )" << std::endl;
         std::cout << "Num of States in Open: " << open_list.size() << std::endl;
-    }
+    }*/
     int tot_n_states_expanded = 0;
     int i = curr_epsilon_idx;
     for (i; i < all_epsilons.size(); ++i)
@@ -407,7 +407,7 @@ void ComputeorImprovePath(
             open_list.pop();
         }
         
-
+        //std::cout << "---------------------Entering planning loop, epsilon =" << epsilon << ", States in Open: "<<open_list.size()<<"------------------ - " << std::endl;
         while (!open_list.empty() &&
             (isKeyLessThan(getKey(open_list.top()->state, epsilon, robotposeX, robotposeY),
                 getKey(StartState, epsilon, robotposeX, robotposeY)) || StartState->rhs_val != StartState->g_val||( StartState->rhs_val==INF && StartState->g_val==INF)))
@@ -439,12 +439,7 @@ void ComputeorImprovePath(
             }
             std::shared_ptr<RobotState>RS_expand = top_entry->state;
             
-            if (RS_expand->g_val == RS_expand->rhs_val)
-            {
-                closed_list.emplace(RS_expand->xyloc.first, RS_expand->xyloc.second);
-                top_entry=nullptr;
-                continue;
-            }
+           
             n_states_expanded++;
             //std::cout << "Expanding State: (" << RS_expand->xyloc.first << " , " << RS_expand->xyloc.second << ") rhs= " << RS_expand->rhs_val << ", g= " << RS_expand->g_val << std::endl;
           
@@ -496,8 +491,8 @@ void ComputeorImprovePath(
                 open_list.pop();
             }
         }
-        std::cout << "---------------------Exited planning loop, epsilon ="<<epsilon<<"------------------- " << std::endl;
-        std::cout <<"Number of states Expanded= "<<n_states_expanded << std::endl;
+        //std::cout << "---------------------Exited planning loop, epsilon ="<<epsilon<< ", States in Open: " << open_list.size() << "------------------ - "<< std::endl;
+        //std::cout <<"Number of states Expanded= "<<n_states_expanded << std::endl;
         tot_n_states_expanded += n_states_expanded;
         if (all_epsilons[i] != 1.0)
         {
@@ -557,6 +552,10 @@ void ComputeorImprovePath(
         {
             Best_Path = New_Path;
             robot_moves = 0;
+            if (all_epsilons[i] == 1)
+            {
+                optimal_path = true;
+            }
         }
         
         
@@ -644,7 +643,10 @@ void planner(
     auto planning_start_time = std::chrono::high_resolution_clock::now();
 
     static std::vector<std::pair<int, int>> Best_Path;
-    Best_Path.reserve(x_size * y_size);
+    if (curr_time == 0)
+    {
+        Best_Path.reserve(x_size * y_size);
+    }
 
     static int robot_moves;
     static int* robot_map = new int[x_size * y_size];
@@ -670,9 +672,10 @@ void planner(
         robotposeY, x_size, y_size, curr_time,GoalLoc,ALL_STATES);
 
     
-
+    static bool optimal_path;
     if (curr_time == 0)
     {
+       optimal_path = false;
        robot_moves = 0;
        curr_epsilon_idx = 0;
        GoalState = find_or_create_state(GoalLoc, ALL_STATES);
@@ -688,7 +691,7 @@ void planner(
        
        ComputeorImprovePath(open_list, closed_list,INCONS_list, ALL_STATES, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY,
            curr_time, StartState, all_epsilons,
-                planning_time_limit, planning_start_time, Best_Path,GoalState,target_steps,target_traj,targetposeX,targetposeY,curr_epsilon_idx,robot_moves);
+                planning_time_limit, planning_start_time, Best_Path,GoalState,target_steps,target_traj,targetposeX,targetposeY,curr_epsilon_idx,robot_moves, optimal_path);
     }
     else
     {
@@ -696,21 +699,22 @@ void planner(
         if (!robot_map_changes.empty())
         {
            curr_epsilon_idx = 0;
+           optimal_path = false;
            
            Update_States_w_Sensor_Info(open_list, closed_list, INCONS_list,GoalState,ALL_STATES, robot_map_changes, robot_map,
                collision_thresh, x_size, y_size, robotposeX, robotposeY,all_epsilons[0]);
            
-           StartState->rhs_val = INF;
-           StartState->g_val = INF;
+           /*StartState->rhs_val = INF;
+           StartState->g_val = INF;*/
            ComputeorImprovePath(open_list, closed_list, INCONS_list, ALL_STATES, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, curr_time, StartState, all_epsilons,
-               planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves);
+               planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves,optimal_path);
         }
-        else if (all_epsilons[curr_epsilon_idx] != 1.0)
+        else if (all_epsilons[curr_epsilon_idx] != 1.0 || optimal_path==false)
         {
-            
-            
+            /*StartState->rhs_val = INF;
+            StartState->g_val = INF;*/
             ComputeorImprovePath(open_list, closed_list, INCONS_list, ALL_STATES, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, curr_time, StartState, all_epsilons,
-                planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves);
+                planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves, optimal_path);
         }
         
     }
