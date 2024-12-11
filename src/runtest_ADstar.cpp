@@ -1,6 +1,6 @@
 /*=================================================================
  *
- * runtest_ARA.cpp
+ * runtest_ADstar.cpp
  *
  *=================================================================*/
 #include <math.h>
@@ -12,7 +12,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "../include/planner_ARA.h"
+#include "../include/planner_ADstar.h"
 
 #ifndef MAPS_DIR
 #define MAPS_DIR "maps"
@@ -21,7 +21,7 @@
 #define OUTPUT_DIR "output"
 #endif
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) ((Y-1)*XSIZE + (X-1))
-int runtest_ARA(int argc, char *argv[])
+int runtest_ADstar(int argc, char *argv[])
 {
     int SENSING_RANGE;
     std::string str_sensor_range = argv[3];
@@ -36,7 +36,10 @@ int runtest_ARA(int argc, char *argv[])
         std::cout << "please use an integer to select the sensor range"<< std::endl;
         return 0;
     }
-    
+
+    /*std::cout << "Enter Sensing Range: ";
+    std::cin >> SENSING_RANGE;*/
+    // READ PROBLEM
     
     std::string mapDirPath = MAPS_DIR;
     std::string mapFilePath = mapDirPath + "/" + argv[1];
@@ -141,9 +144,6 @@ int runtest_ARA(int argc, char *argv[])
     int numofmoves = 0;
     bool caught = false;
     int pathcost = 0;
-    int total_expanded=0;
-    int num_plans=0;
-    double total_time=0;
 
     std::string outputDir = OUTPUT_DIR;
     std::string outputFilePath = outputDir + "/robot_trajectory.txt";
@@ -161,7 +161,6 @@ int runtest_ARA(int argc, char *argv[])
     while (true)
     {
         auto start = std::chrono::high_resolution_clock::now();
-
         if (curr_time==0)
         {
             targetposeX = target_traj[curr_time];
@@ -194,7 +193,7 @@ int runtest_ARA(int argc, char *argv[])
         }
 
         
-        planner_ARA(
+        planner_ADstar(
             sensor_data,
             SENSING_RANGE,
             2,
@@ -207,10 +206,7 @@ int runtest_ARA(int argc, char *argv[])
             targetposeX, 
             targetposeY, 
             curr_time,
-            action_ptr,
-            total_expanded,
-            total_time);
-        ++num_plans;
+            action_ptr);
         newrobotposeX = action_ptr[0];
         newrobotposeY = action_ptr[1];
 
@@ -266,10 +262,6 @@ int runtest_ARA(int argc, char *argv[])
     output_file.close();
 
     std::cout << "\nRESULT" << std::endl;
-    std::cout<<"final robot position: "<<robotposeX<<", "<<robotposeY<<"\n";
-    std::cout<<"avg number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
-    std::cout<<"number of plans generated: "<<num_plans<<"\n";
-    std::cout<<"avg planning time: "<<total_time/num_plans<<" ms\n";
     std::cout << "target caught = " << caught << std::endl;
     std::cout << "time taken (s) = " << curr_time << std::endl;
     std::cout << "moves made = " << numofmoves << std::endl;

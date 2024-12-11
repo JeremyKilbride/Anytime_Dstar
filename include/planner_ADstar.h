@@ -1,7 +1,8 @@
-#ifndef PLANNING_PROJECT_BEST_ANYTIME_H
-#define PLANNING_PROJECT_BEST_ANYTIME_H
+#ifndef PLANNER_ADstar_H
+#define PLANNER_ADstar_H
 
-void plannerADstar(
+// Declare the plan function
+void planner_ADstar(
     int* sensing_data, // Local map
     int SENSING_RANGE,
     int collision_thresh,
@@ -14,6 +15,7 @@ void plannerADstar(
     int targetposeX,
     int targetposeY,
     int curr_time,
-    int* action_ptr);
+    int* action_ptr
+    );
 
-#endif
+#endif // PLANNER_ADstar_H

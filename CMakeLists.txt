@@ -10,13 +10,11 @@ if (NOT MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "-g")
 endif()
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer" CACHE STRING "" FORCE)
-
 include_directories(include)
 
 # Add the main executable.
 add_executable(planner
-        src/planner.cpp src/planner_ARA.cpp src/runtest_ARA.cpp)
+        src/planner.cpp src/planner_ARA.cpp src/runtest_ARA.cpp src/planner_ADstar.cpp src/runtest_ADstar.cpp)
 
 # Define the absolute path to relevant directories.
 target_compile_definitions(planner PRIVATE MAPS_DIR="${CMAKE_SOURCE_DIR}/maps")

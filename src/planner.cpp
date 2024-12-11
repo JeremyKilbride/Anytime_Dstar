@@ -1,6 +1,8 @@
 #include "planner.h"
 #include "planner_ARA.h"
 #include "runtest_ARA.h"
+#include "planner_ADstar.h"
+#include "runtest_ADstar.h"
 #include <iostream>
 #include <chrono>
 #include <string>
@@ -475,7 +477,11 @@ int main(int argc, char** argv)
         runtest_ARA(argc,argv);
         return 0;
     }
-
+    if (which == planner::ANYTIME_DSTAR) {
+        cout << "Using Anytime D* planner\n";
+        runtest_ADstar(argc, argv);
+        return 0;
+    }
 
 
     //make variables necessary to setup problem
