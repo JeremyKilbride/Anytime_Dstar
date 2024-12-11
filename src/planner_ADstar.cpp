@@ -34,7 +34,7 @@ int dX[NUMOFDIRS] = { -1, -1, -1,  0,  0,  1, 1, 1 };
 int dY[NUMOFDIRS] = { -1,  0,  1, -1,  1, -1, 0, 1 };
 const double INF = std::numeric_limits<double>::infinity();
 
-std::pair<int, int> GetXYFromIndex(int index, int XSIZE, int YSIZE)
+std::pair<int, int> GetXYFromIndex(const int index,const int& XSIZE,const int& YSIZE)
 {
     int Y = (index / XSIZE) + 1;
     int X = (index % XSIZE) + 1;
@@ -55,7 +55,6 @@ struct RobotState {
     double rhs_val;
     double g_val;
     
-    
     RobotState(std::pair<int, int> xyloc_, double rhs_val_, double g_val_
         )
         : xyloc(xyloc_) ,rhs_val(rhs_val_),g_val(g_val_)
@@ -66,27 +65,25 @@ struct OpenListEntry
 {
     std::shared_ptr<RobotState> state;
     std::pair<double, double> stored_key;
-    OpenListEntry(std::shared_ptr<RobotState> state_, std::pair<double, double> stored_key_)
+    OpenListEntry(std::shared_ptr<RobotState>& state_, std::pair<double, double>& stored_key_)
         : state(state_), stored_key(stored_key_)
     {
     }
 };
-double get_h_val(const std::shared_ptr<RobotState>&RS, const int robotposeX,const int robotposeY)
+double get_h_val(const std::shared_ptr<RobotState>&RS, const int &robotposeX,const int &robotposeY)
 {
-    /*double h_val = sqrt(2.0) * MIN(abs(RS->xyloc.first - robotposeX), abs(RS->xyloc.second - robotposeY)) +
-        MAX(abs(RS->xyloc.first - robotposeX), abs(RS->xyloc.second - robotposeY)) -
-        MIN(abs(RS->xyloc.first - robotposeX), abs(RS->xyloc.second - robotposeY));*/
+ 
     double h_val = MAX(abs(RS->xyloc.first - robotposeX), abs(RS->xyloc.second - robotposeY)) ;
     return h_val;
 }
 
-double get_minsteps_toloc(const std::shared_ptr<RobotState>& RS, const int X, const int Y)
+double get_minsteps_toloc(const std::shared_ptr<RobotState>& RS, const int& X, const int& Y)
 {
     double steps = MAX(abs(X - RS->xyloc.first), abs(Y - RS->xyloc.second));
     return steps;
 }
 
-std::pair<double, double> getKey(const std::shared_ptr<RobotState>& RS, const double epsilon, const int robotposeX, const int robotposeY)
+std::pair<double, double> getKey(const std::shared_ptr<RobotState>& RS, const double& epsilon, const int& robotposeX, const int& robotposeY)
 {
     double h_val = get_h_val(RS, robotposeX,robotposeY); 
     double k1;
@@ -109,13 +106,13 @@ std::pair<double, double> getKey(const std::shared_ptr<RobotState>& RS, const do
 
 struct CompareKey 
 {
-    bool operator()(const std::shared_ptr<OpenListEntry> a, const std::shared_ptr<OpenListEntry> b) const {
+    bool operator()(const std::shared_ptr<OpenListEntry>& a, const std::shared_ptr<OpenListEntry>& b) const {
         return (a->stored_key.first > b->stored_key.first) ||
             (a->stored_key.first == b->stored_key.first && a->stored_key.second > b->stored_key.second);
     }
 };
 
-std::shared_ptr<RobotState>find_state(std::pair<int, int>loc,std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>states_in_set)
+std::shared_ptr<RobotState>find_state(const std::pair<int, int>&loc,const std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>&states_in_set)
 {
     auto it = states_in_set.find(loc);
     if (it == states_in_set.end())//not in set
@@ -127,8 +124,20 @@ std::shared_ptr<RobotState>find_state(std::pair<int, int>loc,std::unordered_map<
         return it->second;
     }
 }
+bool is_in_set(const std::pair<int, int>&loc,const std::unordered_set<std::pair<int, int>, PairHash> &locs_in_set)
+{
+    auto it = locs_in_set.find(loc);
+    if (it == locs_in_set.end())//not in set
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 
-bool isTimeLeft(const std::chrono::high_resolution_clock::time_point planning_start_time,double planning_time_limit)
+bool isTimeLeft(const std::chrono::high_resolution_clock::time_point &planning_start_time,const double& planning_time_limit)
 {
     
     auto planning_current_time = std::chrono::high_resolution_clock::now();
@@ -147,9 +156,10 @@ bool isTimeLeft(const std::chrono::high_resolution_clock::time_point planning_st
     }
 }
 
-std::vector<std::pair<int, int>> get_neighbors(const std::pair<int, int>& loc, int x_size, int y_size) 
+std::vector<std::pair<int, int>> get_neighbors(const std::pair<int, int>& loc, const int& x_size,const int& y_size) 
 {
     std::vector<std::pair<int, int>> neighbors;
+    neighbors.reserve(8);
     for (int dir = 0; dir < NUMOFDIRS; dir++) {
         int newx = loc.first + dX[dir];
         int newy = loc.second + dY[dir];
@@ -174,19 +184,20 @@ std::shared_ptr<RobotState> find_or_create_state(
     return it->second;
 }
 std::vector<std::pair<int, int>> updaterobotmap_and_getchanges(
-    int* robot_map,
-    const int* sensing_data,
-    const int SENSING_RANGE,
-    const int robotposeX,
-    const int robotposeY,
-    const int x_size,
-    const int y_size,
-    const int curr_time,
-    const std::pair<int,int> GoalLoc,
+    int*& robot_map,
+    int*& sensing_data,
+    const int &SENSING_RANGE,
+    const int &robotposeX,
+    const int &robotposeY,
+    const int &x_size,
+    const int &y_size,
+    const int &curr_time,
+    const std::pair<int,int> &GoalLoc,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& ALL_STATES
     )
 {
     std::vector<std::pair<int, int>> cost_change_locations;
+    cost_change_locations.reserve(x_size * y_size);
     int min_x_local = std::max(1, robotposeX - SENSING_RANGE);
     int max_x_local = std::min(x_size, robotposeX + SENSING_RANGE);
     int min_y_local = std::max(1, robotposeY - SENSING_RANGE);
@@ -224,9 +235,9 @@ std::vector<std::pair<int, int>> updaterobotmap_and_getchanges(
 
 void Update_Epsilon_andResort(
     std::priority_queue<std::shared_ptr<OpenListEntry>, std::vector<std::shared_ptr<OpenListEntry>>, CompareKey>&open_list,
-    const double new_epsilon,
-    const int robotposeX,
-    const int robotposeY)
+    const double &new_epsilon,
+    const int &robotposeX,
+    const int &robotposeY)
 {
     std::priority_queue<std::shared_ptr<OpenListEntry>, std::vector<std::shared_ptr<OpenListEntry>>, CompareKey> new_open_list;
     while (!open_list.empty())
@@ -245,26 +256,26 @@ void Update_Epsilon_andResort(
     open_list = new_open_list;
 }
 
-double get_transition_cost(const int* robot_map,const int collision_thresh, const std::pair<int, int>end_loc, const int x_size,const int y_size)
+double get_transition_cost(int*& robot_map,const int& collision_thresh, const std::pair<int, int>&end_loc, const int& x_size,const int& y_size)
 {
     double tc= (double)robot_map[GETMAPINDEX(end_loc.first, end_loc.second, x_size, y_size)];
     return tc;
    
 }
 
-void UpdateState(std::shared_ptr<RobotState>input_state,
+void UpdateState(std::shared_ptr<RobotState>&input_state,
     std::priority_queue<std::shared_ptr<OpenListEntry>, std::vector<std::shared_ptr<OpenListEntry>>, CompareKey>& open_list,
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& closed_list,
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& INCONS_list,
+    std::unordered_set<std::pair<int, int>, PairHash>& closed_list,
+    std::unordered_set<std::pair<int, int>, PairHash>& INCONS_list,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& ALL_STATES,
     std::shared_ptr<RobotState>& GoalState,
-    const int collision_thresh,
-    const int* robot_map,
-    const int x_size,
-    const int y_size,
-    const double epsilon,
-    const int robotposeX,
-    const int robotposeY
+    const int &collision_thresh,
+    int* &robot_map,
+    const int &x_size,
+    const int &y_size,
+    const double& epsilon,
+    const int &robotposeX,
+    const int &robotposeY
     )
 {
     
@@ -296,23 +307,19 @@ void UpdateState(std::shared_ptr<RobotState>input_state,
     if (input_state->g_val != input_state->rhs_val)
     {
         
-        if (find_state(input_state->xyloc, closed_list) == nullptr)//not in closed list
+        if (is_in_set(input_state->xyloc, closed_list) == false)//not in closed list
         {
             std::shared_ptr<OpenListEntry> entry=std::make_shared<OpenListEntry>(input_state, getKey(input_state, epsilon, robotposeX, robotposeY));
-            //std::cout << "Adding State to Open: (" << input_state->xyloc.first << " , " << input_state->xyloc.second << ") rhs= " << input_state->rhs_val << ", g= " << input_state->g_val << std::endl;
+            
             open_list.push(entry);
         }
         else
         {
-            std::shared_ptr<OpenListEntry> entry = std::make_shared<OpenListEntry>(input_state, getKey(input_state, epsilon, robotposeX, robotposeY));
-            //std::cout << "Adding State to Closed: (" << input_state->xyloc.first << " , " << input_state->xyloc.second << ") rhs= " << input_state->rhs_val << ", g= " << input_state->g_val << std::endl;
-            INCONS_list[input_state->xyloc] = input_state;
-            
+            INCONS_list.emplace(input_state->xyloc.first, input_state->xyloc.second);
         }
     }
 
 }
-
 bool isKeyLessThan(
     const std::pair<double, double>& keyA,
     const std::pair<double, double>& keyB)
@@ -321,26 +328,26 @@ bool isKeyLessThan(
 }
 void ComputeorImprovePath(
     std::priority_queue<std::shared_ptr<OpenListEntry>, std::vector<std::shared_ptr<OpenListEntry>>, CompareKey>& open_list,
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& closed_list,
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& INCONS_list,
+    std::unordered_set<std::pair<int, int>, PairHash>& closed_list,
+    std::unordered_set<std::pair<int, int>, PairHash>& INCONS_list,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& ALL_STATES,
-    int* robot_map,
-    const int collision_thresh,
-    const int x_size,
-    const int y_size,
-    const int robotposeX,
-    const int robotposeY,
-    const int curr_time,
+    int* &robot_map,
+    const int& collision_thresh,
+    const int &x_size,
+    const int &y_size,
+    const int &robotposeX,
+    const int &robotposeY,
+    const int &curr_time,
     std::shared_ptr<RobotState>& StartState,
-    const std::vector<double> all_epsilons,
-    const double planning_time_limit,
+    const std::vector<double>& all_epsilons,
+    const double &planning_time_limit,
     const std::chrono::high_resolution_clock::time_point& planning_start_time,
     std::vector<std::pair<int, int>>& Best_Path,
     std::shared_ptr<RobotState>& GoalState,
-    const int target_steps,
-    int* target_traj,
-    const int targetposeX,
-    const int targetposeY,
+    const int &target_steps,
+    int* &target_traj,
+    const int& targetposeX,
+    const int& targetposeY,
     int &curr_epsilon_idx,
     int &robot_moves
 )
@@ -364,14 +371,17 @@ void ComputeorImprovePath(
         {
             for (const auto& it : INCONS_list)
             {
-                if (it.second == nullptr)
+                std::shared_ptr<RobotState>incons_state = find_state(it, ALL_STATES);
+                if (incons_state == nullptr)
                 {
                     continue;
                 }
-                std::shared_ptr<OpenListEntry>entry = std::make_shared<OpenListEntry>(it.second, getKey(it.second, epsilon, robotposeX, robotposeY));
+
+                std::shared_ptr<OpenListEntry>entry = std::make_shared<OpenListEntry>(incons_state, getKey(incons_state, epsilon, robotposeX, robotposeY));
                 open_list.push(entry);
             }
         }
+        
 
         if (isTimeLeft(planning_start_time, planning_time_limit) == false)
         {
@@ -380,18 +390,23 @@ void ComputeorImprovePath(
         INCONS_list.clear();
         closed_list.clear();
         std::vector<std::pair<int, int>>New_Path;
+        New_Path.reserve(x_size * y_size);
 
-        Update_Epsilon_andResort(open_list, epsilon, robotposeX, robotposeY);
+        if (open_list.empty() == false)
+        {
+            Update_Epsilon_andResort(open_list, epsilon, robotposeX, robotposeY);
+        }
 
         int n_states_expanded = 0;
-        while(open_list.top()==nullptr)
+        while(!open_list.empty() && open_list.top()==nullptr)
         {
             open_list.pop();
         }
-        while(open_list.top()->state==nullptr)
+        while(!open_list.empty() && open_list.top()->state==nullptr)
         {
             open_list.pop();
         }
+        
 
         while (!open_list.empty() &&
             (isKeyLessThan(getKey(open_list.top()->state, epsilon, robotposeX, robotposeY),
@@ -417,9 +432,8 @@ void ComputeorImprovePath(
                 top_entry=nullptr;
                 continue;
             }
-            if (find_state(top_entry->state->xyloc,closed_list)!=nullptr)
+            if (is_in_set(top_entry->state->xyloc,closed_list)==true)
             {
-                //std::cout << "In Closed List" << std::endl;
                 top_entry=nullptr;
                 continue;
             }
@@ -427,7 +441,7 @@ void ComputeorImprovePath(
             
             if (RS_expand->g_val == RS_expand->rhs_val)
             {
-                closed_list[RS_expand->xyloc] = RS_expand;
+                closed_list.emplace(RS_expand->xyloc.first, RS_expand->xyloc.second);
                 top_entry=nullptr;
                 continue;
             }
@@ -437,7 +451,7 @@ void ComputeorImprovePath(
             if (RS_expand->g_val > RS_expand->rhs_val)
             {
                 RS_expand->g_val = RS_expand->rhs_val;
-                closed_list[RS_expand->xyloc] = RS_expand;
+                closed_list.emplace(RS_expand->xyloc.first, RS_expand->xyloc.second);
                 std::vector<std::pair<int, int>>nbrs=get_neighbors(RS_expand->xyloc, x_size, y_size);
                 for (std::pair<int,int>pred_loc : nbrs )
                 {
@@ -473,11 +487,11 @@ void ComputeorImprovePath(
                 UpdateState(RS_expand, open_list, closed_list, INCONS_list,ALL_STATES, GoalState, collision_thresh, robot_map, x_size, y_size, epsilon, robotposeX, robotposeY);
 
             }
-            while(open_list.top()==nullptr)
+            while(!open_list.empty() && open_list.top()==nullptr)
             {
                 open_list.pop();
             }
-            while(open_list.top()->state==nullptr)
+            while(!open_list.empty() && open_list.top()->state==nullptr)
             {
                 open_list.pop();
             }
@@ -491,10 +505,10 @@ void ComputeorImprovePath(
         }
         
         std::shared_ptr<RobotState>current_state = StartState;
-        New_Path.push_back(StartState->xyloc);
+        New_Path.emplace_back(StartState->xyloc.first, StartState->xyloc.second);
         bool path_found = false;
-        std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>visited_states;
-        visited_states[StartState->xyloc] = StartState;
+        std::unordered_set<std::pair<int, int>, PairHash>visited_locs;
+        visited_locs.emplace(StartState->xyloc.first, StartState->xyloc.second);
         while (path_found==false) 
         {
             double min_cost= INF;
@@ -507,7 +521,7 @@ void ComputeorImprovePath(
                 {
                     continue;
                 }
-                if (find_state(succ->xyloc, visited_states) != nullptr)
+                if (is_in_set(succ->xyloc, visited_locs) == true)
                 {
                     continue;
                 }
@@ -529,8 +543,8 @@ void ComputeorImprovePath(
                 break;
             }
 
-            visited_states[best_succ->xyloc] = best_succ;
-            New_Path.push_back(best_succ->xyloc);
+            visited_locs.emplace(best_succ->xyloc.first, best_succ->xyloc.second);
+            New_Path.emplace_back(best_succ->xyloc.first, best_succ->xyloc.second);
             
             current_state = best_succ;
             if (current_state->xyloc == GoalState->xyloc)
@@ -554,18 +568,18 @@ void ComputeorImprovePath(
 
 void Update_States_w_Sensor_Info(
     std::priority_queue<std::shared_ptr<OpenListEntry>, std::vector<std::shared_ptr<OpenListEntry>>, CompareKey>& open_list,
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& closed_list,
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& INCONS_list,
+    std::unordered_set<std::pair<int, int>, PairHash>& closed_list,
+    std::unordered_set<std::pair<int, int>, PairHash>& INCONS_list,
     std::shared_ptr<RobotState>& GoalState,
     std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>& ALL_STATES,
-    std::vector<std::pair<int, int>> robot_map_changes,
-    int* robot_map,
-    const int collision_thresh,
-    const int x_size,
-    const int y_size,
-    const int robotposeX,
-    const int robotposeY,
-    const double epsilon 
+    const std::vector<std::pair<int, int>>& robot_map_changes,
+    int*& robot_map,
+    const int &collision_thresh,
+    const int &x_size,
+    const int &y_size,
+    const int &robotposeX,
+    const int &robotposeY,
+    const double& epsilon 
     )
     
 {
@@ -630,6 +644,8 @@ void planner(
     auto planning_start_time = std::chrono::high_resolution_clock::now();
 
     static std::vector<std::pair<int, int>> Best_Path;
+    Best_Path.reserve(x_size * y_size);
+
     static int robot_moves;
     static int* robot_map = new int[x_size * y_size];
 
@@ -639,13 +655,15 @@ void planner(
     std::pair<int, int> StartLoc= std::make_pair(robotposeX, robotposeY);
     std::shared_ptr<RobotState>StartState;
 
-
-    std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash> closed_list;
-    static std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash> ALL_STATES;
+    std::unordered_set<std::pair<int, int>, PairHash> closed_list;
+    closed_list.reserve(x_size * y_size);
+    static std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash> ALL_STATES;//consider making this std::vector<std::shared_ptr<RobotState>> all_states(x_size * y_size, nullptr);
+    ALL_STATES.reserve(x_size * y_size);
     static std::priority_queue<std::shared_ptr<OpenListEntry>, std::vector<std::shared_ptr<OpenListEntry>>, CompareKey> open_list;
 
     
-    static std::unordered_map<std::pair<int, int>, std::shared_ptr<RobotState>, PairHash>INCONS_list;//should this be static???????
+    static std::unordered_set<std::pair<int, int>, PairHash>INCONS_list;
+    INCONS_list.reserve(x_size * y_size);
     
     
     std::vector<std::pair<int, int>> robot_map_changes = updaterobotmap_and_getchanges(robot_map, sensing_data, SENSING_RANGE, robotposeX,
@@ -700,9 +718,7 @@ void planner(
     robot_moves++;
     action_ptr[0] = Best_Path[robot_moves].first;
     action_ptr[1] = Best_Path[robot_moves].second;
-    std::cout <<"Current Location= ( "<<robotposeX <<" , "<<robotposeY<<" )"<< std::endl;
-    std::cout <<"Next Location= ( "<<Best_Path[robot_moves].first <<" , "<<Best_Path[robot_moves].second<<" )"<< std::endl;
-    std::cout <<"Goal Location= ( "<<targetposeX <<" , "<<targetposeY<<" )"<< std::endl;
+    
 
 
     return;
