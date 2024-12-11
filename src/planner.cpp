@@ -64,7 +64,7 @@ void update_node(Graph& g,
             int successor_map_val=map[successor_idx];
             double cost;
             if (successor_map_val==0 && map_val==0){
-                cost=1;
+                cost = 1;
             }
             else{
                 cost=std::numeric_limits<double>::max();
@@ -275,7 +275,7 @@ int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
         double cost;
         int val=map[idx];
         if(val==0){
-            cost=1;
+            cost = 1;
         }else{
             cost=std::numeric_limits<double>::max();
         }
