@@ -18,6 +18,7 @@
 #include <limits>
 #include <memory>
 #include <algorithm>
+#include <numeric>
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) ((Y-1)*XSIZE + (X-1))
 
 #if !defined(MAX)
@@ -351,7 +352,8 @@ void ComputeorImprovePath_ADstar(
     const int& targetposeY,
     int &curr_epsilon_idx,
     int &robot_moves,
-    bool &optimal_path
+    bool &optimal_path,
+    std::vector<int>&expansions_each_step
 )
 {
     std::pair<int, int> start_pos = std::make_pair(robotposeX, robotposeY);
@@ -442,7 +444,7 @@ void ComputeorImprovePath_ADstar(
             std::shared_ptr<RobotState_ADstar>RS_expand = top_entry->state;
             
            
-            n_states_expanded++;
+            
             //std::cout << "Expanding State: (" << RS_expand->xyloc.first << " , " << RS_expand->xyloc.second << ") rhs= " << RS_expand->rhs_val << ", g= " << RS_expand->g_val << std::endl;
           
             if (RS_expand->g_val > RS_expand->rhs_val)
@@ -484,6 +486,7 @@ void ComputeorImprovePath_ADstar(
                 UpdateState_ADstar(RS_expand, open_list, closed_list, INCONS_list,ALL_STATES, GoalState, collision_thresh, robot_map, x_size, y_size, epsilon, robotposeX, robotposeY);
 
             }
+            n_states_expanded++;
             while(!open_list.empty() && open_list.top()==nullptr)
             {
                 open_list.pop();
@@ -562,7 +565,7 @@ void ComputeorImprovePath_ADstar(
         
         
     }
-    
+    expansions_each_step.push_back(tot_n_states_expanded);
 
 }
 
@@ -633,7 +636,8 @@ void planner_ADstar(
     int curr_time,
     int* action_ptr)
 {
-   
+    static std::vector<double>times_to_compute;
+    static std::vector<int>expansions_each_step;
     const std::vector<double> all_epsilons = {50.0,5.0, 2.0,1.5,1.2, 1.0 };
     static int curr_epsilon_idx;
     static double planning_time_limit;
@@ -694,7 +698,7 @@ void planner_ADstar(
        
        ComputeorImprovePath_ADstar(open_list, closed_list,INCONS_list, ALL_STATES, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY,
            curr_time, StartState, all_epsilons,
-                planning_time_limit, planning_start_time, Best_Path,GoalState,target_steps,target_traj,targetposeX,targetposeY,curr_epsilon_idx,robot_moves, optimal_path);
+                planning_time_limit, planning_start_time, Best_Path,GoalState,target_steps,target_traj,targetposeX,targetposeY,curr_epsilon_idx,robot_moves, optimal_path,expansions_each_step);
     }
     else
     {
@@ -709,14 +713,14 @@ void planner_ADstar(
            
            
            ComputeorImprovePath_ADstar(open_list, closed_list, INCONS_list, ALL_STATES, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, curr_time, StartState, all_epsilons,
-               planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves,optimal_path);
+               planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves,optimal_path,expansions_each_step);
            
         }
         else if (all_epsilons[curr_epsilon_idx] != 1.0 || optimal_path==false)
         {
             
             ComputeorImprovePath_ADstar(open_list, closed_list, INCONS_list, ALL_STATES, robot_map, collision_thresh, x_size, y_size, robotposeX, robotposeY, curr_time, StartState, all_epsilons,
-                planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves, optimal_path);
+                planning_time_limit, planning_start_time, Best_Path, GoalState, target_steps, target_traj, targetposeX, targetposeY, curr_epsilon_idx,robot_moves, optimal_path,expansions_each_step);
             
         }
         
@@ -725,7 +729,31 @@ void planner_ADstar(
     robot_moves++;
     action_ptr[0] = Best_Path[robot_moves].first;
     action_ptr[1] = Best_Path[robot_moves].second;
+    auto planning_end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(planning_end_time - planning_start_time);
+    times_to_compute.push_back(((double)planner_time.count())/1000.0);
+
     
+
+
+    if (Best_Path[robot_moves].first == targetposeX && Best_Path[robot_moves].second == targetposeY)
+    {
+        auto maxtimeiter = std::max_element(times_to_compute.begin(), times_to_compute.end());
+        int maxtimeIndex = std::distance(times_to_compute.begin(), maxtimeiter);
+        int maxtime = *maxtimeiter;
+
+        auto mintimeiter = std::min_element(times_to_compute.begin(), times_to_compute.end());
+        int mintimeIndex = std::distance(times_to_compute.begin(), mintimeiter);
+        int mintime = *mintimeiter;
+
+        
+        std::cout << "Total Planning Time (ms) = " << std::accumulate(times_to_compute.begin(), times_to_compute.end(), 0.0) << std::endl;
+        std::cout << "Average Planning Time Per Timestep (ms) = "<<std::accumulate(times_to_compute.begin(), times_to_compute.end(), 0.0) / times_to_compute.size() << std::endl;
+        std::cout << "Total Number of States Expanded = " << std::accumulate(expansions_each_step.begin(), expansions_each_step.end(), 0.0) << std::endl;
+        std::cout << "Average Number of Expansions Per Timestep = " << std::accumulate(expansions_each_step.begin(), expansions_each_step.end(), 0.0) / expansions_each_step.size() << std::endl;
+        std::cout <<"The max planning time was "<<maxtime<<" ms at step: "<<maxtimeIndex<< std::endl;
+        std::cout << "The min planning time was " << mintime << " ms at step: " << mintimeIndex << std::endl;
+    }
 
 
     return;
