@@ -66,7 +66,7 @@ struct OpenListEntry_ADstar
 {
     std::shared_ptr<RobotState_ADstar> state;
     std::pair<double, double> stored_key;
-    OpenListEntry_ADstar(std::shared_ptr<RobotState_ADstar>& state_, std::pair<double, double>& stored_key_)
+    OpenListEntry_ADstar(std::shared_ptr<RobotState_ADstar> state_, std::pair<double, double> stored_key_)
         : state(state_), stored_key(stored_key_)
     {
     }

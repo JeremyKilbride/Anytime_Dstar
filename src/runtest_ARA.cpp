@@ -12,7 +12,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "../include/planner_ARA.h"
+#include "planner_ARA.h"
 
 #ifndef MAPS_DIR
 #define MAPS_DIR "maps"

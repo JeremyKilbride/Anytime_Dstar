@@ -1,7 +1,5 @@
 #include "planner.h"
-#include "planner_ARA.h"
 #include "runtest_ARA.h"
-#include "planner_ADstar.h"
 #include "runtest_ADstar.h"
 #include <iostream>
 #include <chrono>
@@ -293,8 +291,6 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
-    //std::cout << "\n"<< "robot pose: " << start.x <<","<<start.y << "\n";
-    //std::cout << "\n"<< "goal pose: " << goal.x <<","<<goal.y << "\n";
     static bool first_time=true; 
     int start_idx= get_key(x_size,start.x, start.y);
     int goal_idx= get_key(x_size,goal.x, goal.y);
@@ -312,8 +308,6 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     g.set_start(start_idx);
     int num_expanded=0;
     bool expanded_start=false;
-    //cout<<"open list size: "<<open_list.size()<<"\n";
-    //cout<<"start state map val "<<map[start_idx]<<"\n";
    while(*open_list.begin()<g.calculate_start_key() || g.get(start_idx)->rhs != g.get(start_idx)->g){
         //get top item from open 
         Node state=*open_list.begin();
@@ -368,33 +362,6 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
     return plan;
 }
 
-void plannerAnytimeDstar()
-{
-    std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
-    cout<<"using Anytime D* planner\n";
-    std::chrono::steady_clock::time_point t_end =std::chrono::steady_clock::now();
-    std::chrono::microseconds planner_time = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
-    cout<<"total time: "<<(double)planner_time.count()/1000<< " ms\n";
-}
-
-
-
-//checks if a state is within the robot's sensing range based in the robot's current position
-bool check_in_sense_range(int cx,int cy, int x, int y, int sr,int offset){
-    return (x>cx-sr-offset && x<cx+sr+offset && y>cy-sr-offset && y<cy+sr+offset);
-}
-
-//used to merge sets of indices for propagating map changes, only includes states within the sensor range of the robot
-void merge_sets(std::unordered_set<int>& big, std::unordered_set<int>& small,int cx, int cy,int sensing_rng, int x_size, int offset ){
-    for(int i: small){
-        int x=i%x_size; 
-        int y=i/x_size;
-        if(big.find(i)==big.end() && check_in_sense_range(x,y,cx,cy,sensing_rng,offset)){
-            big.insert(i);
-        }
-    }
-}
-
 enum planner{
     ASTAR, // =0
     DSTAR_LITE, // =1
@@ -426,6 +393,7 @@ void output(const std::vector<std::pair<int, int>>& plan) {
     output_file.close();
     // std::cout << "Trajectory appended to " << outputFilePath << std::endl;
 }
+
 
 int main(int argc, char** argv)
 {
@@ -602,9 +570,6 @@ int main(int argc, char** argv)
         cout<<"average number of states expanded: "<<(double)total_expanded/num_plans<<"\n";
         cout<<"optimal number of steps: "<<optimal_plan.size()-1<<"\n";
 
-        break;
-    case planner::ANYTIME_DSTAR:
-        plannerAnytimeDstar();
         break;
     default:
         cout<<"planner selection not recognized, please try again with either 0, 1, or 2\n";
