@@ -12,7 +12,7 @@
 #include <chrono>
 #include <cmath>
 
-#include "../include/planner_ADstar.h"
+#include "planner_ADstar.h"
 
 #ifndef MAPS_DIR
 #define MAPS_DIR "maps"
