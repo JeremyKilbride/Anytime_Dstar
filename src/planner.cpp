@@ -51,12 +51,13 @@ void update_node(Graph& g,
                  int x_size, 
                  int y_size, 
                  int* map, 
-                 std::set<Node,std::less<Node>>& open){
-
+                 std::set<Node,std::less<Node>>& open,
+                 std::unordered_map<int,std::set<Node, std::less<Node>>::iterator >& open_idxs){
+    
+    int idx=get_key(x_size,s.x,s.y);
     if(!s.is_goal){
         double best_rhs=std::numeric_limits<double>::max();
         std::vector<Node> successors=get_successors(std::make_shared<Node>(s),g, map);
-        int idx=get_key(x_size,s.x,s.y);
         int map_val=map[idx];
         //loop over all successors 
         for(Node successor: successors){
@@ -76,13 +77,16 @@ void update_node(Graph& g,
         }
         s.rhs=best_rhs;
     }   
-    auto it=find_node(open,s);
-    if(it!=open.end()){
-        open.erase(it);
+    // auto it=find_node(open,s);
+    auto it=open_idxs.find(idx);
+    if(it!=open_idxs.end()){
+        open.erase(it->second);
+        open_idxs.erase(it);
     }
     if(s.g!=s.rhs){
         g.calculate_node_key(s);
         std::pair<std::set<Node>::iterator,bool>ret=open.emplace(s);
+        open_idxs.emplace(idx,ret.first);
         if (!ret.second){
             cout<<"insertion failed\n";
         }
@@ -287,7 +291,17 @@ int get_best_neighbor_idx(Graph& g, Node& s,int* map,int x_size,int y_size){
     return best_idx;
 }
 
-std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_size, Node start, Node goal,Graph& g, std::set<Node, std::less<Node>>& open_list, double& total_time, int& total_expanded)
+std::vector<std::pair<int,int>> plannerDstarLite(
+    int* map, 
+    int x_size, 
+    int y_size, 
+    Node start, 
+    Node goal,
+    Graph& g, 
+    std::set<Node, std::less<Node>>& open_list, 
+    std::unordered_map<int,std::set<Node, std::less<Node>>::iterator >& open_idxs,
+    double& total_time, 
+    int& total_expanded)
 {
     std::vector<std::pair<int,int>> plan;
     std::chrono::steady_clock::time_point t_start =std::chrono::steady_clock::now();
@@ -301,7 +315,9 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
         goal.rhs=0;
         g.calculate_node_key(goal);
         goal.is_goal=true;
-        open_list.emplace(goal);
+        auto [it, success]=open_list.emplace(goal);
+        goal_idx=get_key(x_size,goal);
+        open_idxs.emplace(goal_idx,it);
         g.addNode(goal);
         first_time=false;
     }
@@ -311,13 +327,17 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
    while(*open_list.begin()<g.calculate_start_key() || g.get(start_idx)->rhs != g.get(start_idx)->g){
         //get top item from open 
         Node state=*open_list.begin();
+        int state_idx=get_key(x_size,state);
         open_list.erase(open_list.begin());
+        open_idxs.erase(state_idx);
         std::shared_ptr<Node> state_ptr=g.get(state);
         Node copy_new_km=state;
         g.calculate_node_key(copy_new_km);
         if(state<copy_new_km){
             g.set(copy_new_km);
-            open_list.emplace(copy_new_km);
+            int copy_km_idx=get_key(x_size,copy_new_km);
+            auto [it, success]=open_list.emplace(copy_new_km);
+            open_idxs.emplace(copy_km_idx,it);
         }
         //state is overconsistent
         else if (state_ptr->g > state_ptr->rhs){
@@ -326,7 +346,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             g.set(*state_ptr);
             std::vector<Node> successors=get_successors(state_ptr,g,map);
             for(Node successor: successors){
-                update_node(g, successor, x_size, y_size, map, open_list);
+                update_node(g, successor, x_size, y_size, map, open_list,open_idxs);
             }
         }
         //state is under consistent
@@ -335,10 +355,10 @@ std::vector<std::pair<int,int>> plannerDstarLite(int* map, int x_size, int y_siz
             state_ptr->g=std::numeric_limits<double>::max();
             g.set(*state_ptr);
             //update state and all successors
-            update_node(g,*state_ptr,x_size,y_size,map,open_list);
+            update_node(g,*state_ptr,x_size,y_size,map,open_list,open_idxs);
             std::vector<Node> successors=get_successors(state_ptr,g,map);
             for (Node successor: successors){
-                update_node(g,successor,x_size,y_size,map,open_list);
+                update_node(g,successor,x_size,y_size,map,open_list,open_idxs);
             }
         }
     }
@@ -482,6 +502,7 @@ int main(int argc, char** argv)
     std::unordered_map <int, Node> incons;
     int current_plan_idx=1;
     std::set<Node, std::less<Node>> _open;
+    std::unordered_map<int,std::set<Node, std::less<Node>>::iterator > _open_idxs;
     Node last_replan_node=current_node;
     int num_steps=0;
     double num_plans=0;
@@ -528,7 +549,7 @@ int main(int argc, char** argv)
         cout<<"using D* Lite planner\n";
         std::cout << "\n"<< "x_size: " << x_size << "\n";
         std::cout << "\n"<< "y_size: " << y_size << "\n";
-        plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,total_time,total_expanded);
+        plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,_open_idxs,total_time,total_expanded);
         output(plan);
         ++num_plans;
         while (current_node.x != goal_node.x || current_node.y != goal_node.y){ 
@@ -551,12 +572,12 @@ int main(int argc, char** argv)
                 //update changed nodes
                 for(int change_idx: changes){
                     NodePtr ptr_changed=graph.getAddNode(change_idx);
-                    update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open);
+                    update_node(graph,*ptr_changed,x_size,y_size,robot_map,_open,_open_idxs);
                 }
                 graph.km+=computeHeuristic(last_replan_node,current_node);
                 last_replan_node=current_node;
                 //replan
-                plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,total_time,total_expanded);
+                plan=plannerDstarLite(robot_map,x_size,y_size,current_node,goal_node,graph,_open,_open_idxs,total_time,total_expanded);
                 output(plan);
                 ++num_plans;
                 current_plan_idx=1;
