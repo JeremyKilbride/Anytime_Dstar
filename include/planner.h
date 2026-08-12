@@ -203,8 +203,12 @@ class Graph
 std::unordered_set<int> update_map(int* current,int* global, int x_size, int y_size, int robotposeX, int robotposeY,int sensor_range){
     std::unordered_set<int> cell_changes;
     //cout<<"updating map for robot position "<<robotposeX<<", "<<robotposeY<<"\n";
-    for(int i =0; i< x_size;i++){
-        for(int j=0; j<y_size;j++){
+    int lowerboundX= (robotposeX-sensor_range > 0)  ? robotposeX-sensor_range  : 0; 
+    int lowerboundY= (robotposeY-sensor_range > 0)  ? robotposeY-sensor_range  : 0; 
+    int upperboundX= (robotposeX+sensor_range+1 < x_size)  ? robotposeX+sensor_range+1  : x_size; 
+    int upperboundY= (robotposeY+sensor_range+1 < y_size)  ? robotposeY+sensor_range+1  : y_size; 
+    for(int i =lowerboundX; i< upperboundX;i++){
+        for(int j=lowerboundY; j<upperboundY;j++){
             if(i>=robotposeX-sensor_range && i<=robotposeX+sensor_range){
                 if(j>=robotposeY-sensor_range&& j<=robotposeY+sensor_range){
                     if(current[get_key(x_size,i,j)] != global[get_key(x_size,i,j)]){

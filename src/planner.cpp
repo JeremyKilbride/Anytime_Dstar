@@ -324,7 +324,7 @@ std::vector<std::pair<int,int>> plannerDstarLite(
     g.set_start(start_idx);
     int num_expanded=0;
     bool expanded_start=false;
-   while(*open_list.begin()<g.calculate_start_key() || g.get(start_idx)->rhs != g.get(start_idx)->g){
+   while(*open_list.begin()<g.calculate_start_key() || g.get(start_idx)->rhs > g.get(start_idx)->g){
         //get top item from open 
         Node state=*open_list.begin();
         int state_idx=get_key(x_size,state);
