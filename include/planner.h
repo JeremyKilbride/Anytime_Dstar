@@ -32,7 +32,6 @@ struct Node
     double g=std::numeric_limits<double>::max();
     double h=0;
     double rhs=std::numeric_limits<double>::max();
-    double km=0;
     std::pair<double,double> key;
     bool is_goal=false;
     int parent_idx=-1;
@@ -55,7 +54,6 @@ struct Node
         this->g=incoming.g;
         this->h=incoming.h;
         this->rhs=incoming.rhs;
-        this->km=incoming.km;
         this->key=incoming.key;
         this->is_goal=incoming.is_goal;
         this->parent_idx=incoming.parent_idx;
@@ -104,7 +102,6 @@ class Graph
     
         void addNode(Node& newNode){
             int idx=get_key(x_size,newNode.x,newNode.y);
-            newNode.km=this->km;
             nodeMap.emplace(idx,newNode);
         }
         
@@ -112,7 +109,6 @@ class Graph
         void addNode(int x, int y){
             Node newNode(x,y);
             newNode.compute_h(goal_x,goal_y);
-            newNode.km=this->km;
             nodeMap.emplace(get_key(x_size,newNode.x,newNode.y),newNode);
         }
 
